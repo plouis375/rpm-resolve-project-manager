@@ -1,35 +1,25 @@
 #!/bin/bash
+# Réservé au développeur : fabrique le .pkg à partager (double-clic pour l’utilisateur final).
 set -euo pipefail
-
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ID="com.idolatry.resolveprojectcreationtool"
-PLUGIN_ROOT="/Library/Application Support/Blackmagic Design/DaVinci Resolve/Workflow Integration Plugins"
-VERSION="0.16.0"
-PKG="$ROOT/dist/Resolve-Project-Creation-Tool-v0.16.pkg"
+VERSION="$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' "$ROOT/package.json" | head -1)"
+OUT="$ROOT/dist/RPM-Resolve-Project-Manager-v$VERSION.pkg"
+WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 
 "$ROOT/build.command"
-STAGING="$(mktemp -d "$ROOT/work/.rpc-pkg.XXXXXX")"
-trap 'rm -rf "$STAGING"' EXIT
-mkdir -p "$STAGING/payload/$PLUGIN_ID" "$STAGING/scripts"
-cp -R "$ROOT/dist/$PLUGIN_ID/." "$STAGING/payload/$PLUGIN_ID/"
-chmod 755 "$STAGING/payload/$PLUGIN_ID/ffprobe"
-cp "$ROOT/package-scripts/preinstall" "$STAGING/scripts/preinstall"
-cp "$ROOT/package-scripts/postinstall" "$STAGING/scripts/postinstall"
-chmod 755 "$STAGING/scripts/preinstall" "$STAGING/scripts/postinstall"
-find "$STAGING/payload" "$STAGING/scripts" -name '._*' -delete
-find "$STAGING/payload" "$STAGING/scripts" -name '.DS_Store' -delete
+mkdir -p "$WORK/payload" "$WORK/scripts" "$WORK/resources"
+ditto "$ROOT/dist/$PLUGIN_ID" "$WORK/payload/$PLUGIN_ID"
+find "$WORK/payload" \( -name '.DS_Store' -o -name '._*' \) -delete
+chmod 755 "$WORK/payload/$PLUGIN_ID/ffprobe"
+cp "$ROOT/package-scripts/preinstall" "$ROOT/package-scripts/postinstall" "$WORK/scripts/"
+chmod 755 "$WORK/scripts/"*
+cp "$ROOT/installer/resources/"* "$WORK/resources/"
+sed "s/__VERSION__/$VERSION/" "$ROOT/installer/distribution.xml" > "$WORK/distribution.xml"
 
-pkgbuild \
-  --root "$STAGING/payload" \
-  --filter '(^|/)\\.DS_Store$' \
-  --filter '(^|/)CVS(/|$)' \
-  --filter '(^|/)\\.svn(/|$)' \
-  --scripts "$STAGING/scripts" \
-  --identifier "$PLUGIN_ID" \
-  --version "$VERSION" \
-  --install-location "$PLUGIN_ROOT" \
-  --ownership recommended \
-  "$PKG"
-
-printf 'Installeur créé : %s\n' "$PKG"
-printf 'Le paquet n’est pas signé/notarié; macOS peut demander une autorisation lors de son ouverture.\n'
+pkgbuild --root "$WORK/payload" --identifier "$PLUGIN_ID" --version "$VERSION" --ownership recommended \
+  --install-location "/Library/Application Support/Blackmagic Design/DaVinci Resolve/Workflow Integration Plugins" \
+  --scripts "$WORK/scripts" "$WORK/plugin.pkg"
+productbuild --distribution "$WORK/distribution.xml" --resources "$WORK/resources" --package-path "$WORK" "$OUT"
+printf '\nInstalleur prêt : %s\n' "$OUT"
+open -R "$OUT"

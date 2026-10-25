@@ -16,11 +16,11 @@ The primary user is a video editor working in DaVinci Resolve Studio on macOS, p
 
 ## Product Purpose
 
-Resolve Project Creation Tool is a temporary, integrated setup assistant for creating and preparing a Resolve project. It guides the editor through project naming, source selection and classification, organization, and optional preparation actions, then closes so the editor can continue in Resolve without keeping the assistant open. Success means the editor starts editing with a useful Media Pool structure and selected media already imported.
+RPM - Resolve Project Manager is a temporary, integrated setup assistant for creating and preparing a Resolve project. It guides the editor through project naming, source selection and classification, organization, and optional preparation actions, then closes so the editor can continue in Resolve without keeping the assistant open. Success means the editor starts editing with a useful Media Pool structure and selected media already imported.
 
 ## Positioning
 
-The product combines Resolve project setup, guided media classification, and camera-aware rush organization in a focused creation flow. The product name is Resolve Project Creation Tool.
+The product combines Resolve project setup, guided media classification, and camera-aware rush organization in a focused creation flow. The product name is RPM - Resolve Project Manager.
 
 ## Operating Context
 

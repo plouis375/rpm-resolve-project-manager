@@ -6,7 +6,8 @@
 - Sortie au choix : Rec.709-A (visionnage sur Mac) ou Rec.709 Gamma 2.4 (diffusion). Le choix est mémorisé.
 - Presets `.drx` exportés depuis Resolve dans `plugin/presets`, correspondance caméra → profil dans `plugin/lib/cst.js` (testée).
 - Les plans de caméras non reconnues restent sans étalonnage et sont listés dans le rapport final.
-- Nouvel installeur `.pkg` avec écrans d’accueil en français : les utilisateurs n’ont plus de fichier `.command` à lancer. `make-installer.command` le fabrique (réservé au développeur).
+- Nouvel installeur `.pkg` avec écrans d’accueil en français : les utilisateurs n’ont plus de fichier `.command` à lancer. `package.command` le fabrique (réservé au développeur).
+- Le plugin s’appelle désormais **RPM - Resolve Project Manager** (dépôt GitHub `rpm-resolve-project-manager`). L’identifiant technique ne change pas : la mise à jour remplace bien l’ancienne version et conserve tes préférences.
 
 ## v0.16 — 25 octobre 2026
 

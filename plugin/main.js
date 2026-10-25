@@ -879,7 +879,7 @@ function createWindow() {
     height: 960,
     minWidth: 1050,
     minHeight: 720,
-    title: 'Resolve Project Creation Tool',
+    title: 'RPM - Resolve Project Manager',
     backgroundColor: '#d6d0c6',
     show: false,
     titleBarStyle: 'hiddenInset',

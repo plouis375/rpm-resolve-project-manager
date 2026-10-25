@@ -6,8 +6,8 @@ This build reports `LGPL version 2.1 or later`; it was configured with `--disabl
 
 The corresponding unmodified FFmpeg 9.0.2 source archive and its upstream PGP signature are published as assets on this release:
 
-- https://github.com/plouis375/resolve-project-creation-tool/releases/download/v0.07/ffmpeg-9.0.2.tar.xz
-- https://github.com/plouis375/resolve-project-creation-tool/releases/download/v0.07/ffmpeg-9.0.2.tar.xz.asc
+- https://github.com/plouis375/rpm-resolve-project-manager/releases/download/v0.07/ffmpeg-9.0.2.tar.xz
+- https://github.com/plouis375/rpm-resolve-project-manager/releases/download/v0.07/ffmpeg-9.0.2.tar.xz.asc
 
 The upstream source archive SHA-256 is `8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e`.
 

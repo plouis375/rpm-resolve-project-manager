@@ -31,5 +31,5 @@ if ! ditto "$SOURCE" "$TARGET"; then
   exit 1
 fi
 
-printf 'Resolve Project Creation Tool installé. Redémarre Resolve pour le charger.\n'
+printf 'RPM - Resolve Project Manager installé. Redémarre Resolve pour le charger.\n'
 if [ -n "$BACKUP" ]; then printf 'Ancienne version conservée : %s\n' "$BACKUP"; fi

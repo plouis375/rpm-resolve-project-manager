@@ -2,7 +2,7 @@
 <BlackmagicDesign>
   <Plugin>
     <Id>com.idolatry.resolveprojectcreationtool</Id>
-    <Name>Resolve Project Creation Tool</Name>
+    <Name>RPM - Resolve Project Manager</Name>
     <Version>0.17.0</Version>
     <Description>Créer un projet Resolve et classer ses médias.</Description>
     <FilePath>main.js</FilePath>
