@@ -3,7 +3,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ID="com.idolatry.resolveprojectcreationtool"
-VERSION="$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' "$ROOT/package.json" | head -1)"
+VERSION="$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' "$ROOT/plugin/package.json" | head -1)"
 OUT="$ROOT/dist/RPM-Resolve-Project-Manager-v$VERSION.pkg"
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 
