@@ -1,5 +1,12 @@
 # Historique des versions
 
+## v0.18.1 — 26 octobre 2026
+
+- Correctif : la création ne reste plus figée quand Resolve bloque pendant l’application du CST. Chaque appel CST a un délai de 20 s ; un plan sans CST est signalé dans le message final.
+- Le projet est sauvegardé après l’import et après la création de la timeline, avant le CST : un blocage ne fait plus perdre les rushes ni la timeline.
+- Désinstallation : le chemin du plugin est passé en argument à osascript, sans concaténation.
+- Date des rushes : la regex ignore les suites de chiffres parasites.
+
 ## v0.18 — 25 octobre 2026
 
 - Nouvelle colonne **Profil couleur** à l’étape Sources : détectée automatiquement et modifiable plan par plan (S-Log3, Canon Log 2, Canon Log 3, ou aucun CST).
