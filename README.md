@@ -19,8 +19,8 @@ Assistant macOS pour **DaVinci Resolve Studio** : il crée un projet, classe les
 - Analyse des dossiers sources : médias reconnus, durée, taille, doublons probables.
 - Classement automatique des rushs par marque de caméra, modèle et date de tournage.
 - Création du projet, des chutiers et import des médias retenus, avec un rapport final.
-- Timeline d’assemblage facultative, avec résolution et fréquence réglables.
-- Color Space Transform automatique sur chaque plan selon la caméra (voir plus bas).
+- Timeline d’assemblage facultative, avec résolution et fréquence réglables, et des timelines par caméra ou par jour de tournage.
+- Color Space Transform automatique sur chaque plan selon son profil couleur (voir plus bas).
 - Préparation des proxies avec Blackmagic Proxy Generator.
 
 ## Prérequis
@@ -105,15 +105,19 @@ Si l’option est cochée, Resolve crée `Nom du projet — Assemblage` dans le 
 
 Cette timeline est un point de départ : elle ne coupe pas les plans et ne choisit pas de prises.
 
+Des timelines supplémentaires peuvent être ajoutées, une par caméra et/ou une par jour de tournage. Elles suivent les mêmes réglages et reçoivent elles aussi le CST.
+
 ### Color Space Transform
 
-Avec l’option **Appliquer un Color Space Transform**, chaque plan reçoit un node CST selon sa caméra :
+Avec l’option **Appliquer un Color Space Transform**, chaque plan avec un profil couleur reçoit un node CST. Le profil est détecté automatiquement, plan par plan, à l’étape Sources (colonne **Profil couleur**), et peut être modifié à la main :
 
 - Sony FX3, FX6, FX9, Burano (S-Gamut3.Cine / S-Log3)
 - Canon C50, C70 (Cinema Gamut / Canon Log 2)
 - Canon R5 (Cinema Gamut / Canon Log 3)
 
-Sortie au choix : Rec.709-A (visionnage sur Mac) ou Rec.709 Gamma 2.4 (diffusion). Les plans d’autres caméras restent sans étalonnage et sont signalés dans le rapport. Le chutier Exports n’est pas modifié.
+Pour les Sony, le gamma enregistré dans le XML sidecar prime sur le modèle : un plan en S-Log3 reçoit le CST, un plan en Rec.709, HLG ou S-Cinetone n’en reçoit pas. Un autre log (S-Log2, par exemple) n’a pas de preset : choisis son profil à la main.
+
+Sortie au choix : Rec.709-A (visionnage sur Mac) ou Rec.709 Gamma 2.4 (diffusion). Les plans sans profil restent sans étalonnage et sont signalés dans le rapport. Le chutier Exports n’est pas modifié.
 
 ## Proxies avec Blackmagic Proxy Generator
 
