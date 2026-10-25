@@ -1,8 +1,18 @@
-# RPM - Resolve Project Manager
+<p align="center">
+  <img src="docs/banner.svg" alt="RPM - Resolve Project Manager" width="100%">
+</p>
+
+<p align="center">
+  <a href="https://github.com/plouis375/rpm-resolve-project-manager/releases/latest"><img alt="Dernière version" src="https://img.shields.io/github/v/release/plouis375/rpm-resolve-project-manager?color=a53b20&label=version"></a>
+  <img alt="macOS" src="https://img.shields.io/badge/macOS-only-171717">
+  <img alt="DaVinci Resolve Studio" src="https://img.shields.io/badge/DaVinci%20Resolve%20Studio-21.1-171717">
+</p>
 
 Assistant macOS pour **DaVinci Resolve Studio** : il crée un projet, classe les médias dans le Media Pool et prépare la timeline de montage. Il s’ouvre depuis le menu de Resolve et se ferme quand le projet est prêt.
 
-[Télécharger la dernière version](https://github.com/plouis375/rpm-resolve-project-manager/releases/latest) · [Historique des versions](CHANGELOG.md)
+<p align="center">
+  <a href="https://github.com/plouis375/rpm-resolve-project-manager/releases/latest"><strong>Télécharger la dernière version</strong></a> · <a href="CHANGELOG.md">Historique des versions</a>
+</p>
 
 ## Ce qu’il fait
 
