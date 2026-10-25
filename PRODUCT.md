@@ -53,7 +53,7 @@ The product combines Resolve project setup, guided media classification, and cam
 
 ## Brand Commitments
 
-The user chose a bold graphic-brutalist interface: warm paper surfaces, heavy black rules and type, square controls, hard offset shadows, and a vivid coral action color. Preserve the clear four-step workflow and Resolve terminology. Reserve green and red for meaningful states.
+The interface follows DaVinci Resolve's visual language: dark charcoal surfaces, thin grey rules, compact controls and an orange accent. Preserve the clear four-step workflow and Resolve terminology. Reserve green and red for meaningful states; amber marks items to review.
 
 ## Evidence on Hand
 

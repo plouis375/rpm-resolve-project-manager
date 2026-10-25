@@ -678,7 +678,7 @@ function createWindow() {
     minWidth: 1050,
     minHeight: 720,
     title: 'RPM - Resolve Project Manager',
-    backgroundColor: '#d6d0c6',
+    backgroundColor: '#1b1b1b',
     show: false,
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 18, y: 20 },
