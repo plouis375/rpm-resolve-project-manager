@@ -1,5 +1,11 @@
 # Historique des versions
 
+## v0.18.2
+
+- Correctif : un import Resolve bloqué ne fige plus la création. Chaque lot d’import a un délai de 120 s ; un lot sans réponse est signalé « à vérifier » dans le rapport final.
+- Les échecs des appels Resolve non bloquants (réglages de timeline, CST, sauvegarde) sont désormais journalisés dans la console au lieu d’être ignorés.
+- Interne : la création du projet (chutiers, imports, timelines, CST) est sortie de `main.js` vers `plugin/lib/create-project.js` et testée avec un faux Resolve (`tests/create-project.test.js`).
+
 ## v0.18.1 — 26 octobre 2026
 
 - Correctif : la création ne reste plus figée quand Resolve bloque pendant l’application du CST. Chaque appel CST a un délai de 20 s ; un plan sans CST est signalé dans le message final.
