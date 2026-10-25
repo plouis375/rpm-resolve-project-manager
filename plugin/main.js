@@ -911,7 +911,7 @@ function registerHandlers() {
   });
   ipcMain.handle('tool:finish', async () => {
     if (integrationReady && resolveObj) {
-      try { await resolveObj.OpenPage('edit'); } catch (_) {}
+      try { await resolveObj.OpenPage('edit'); } catch (error) { console.warn('Ouverture de la page Edit impossible :', error?.message || error); }
     }
     mainWindow?.close();
     return true;
