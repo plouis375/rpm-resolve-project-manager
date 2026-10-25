@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/banner.svg?v=2" alt="RPM - Resolve Project Manager" width="100%">
+  <img src="docs/banner-v2.svg" alt="RPM - Resolve Project Manager" width="100%">
 </p>
 
 <p align="center">
