@@ -390,3 +390,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   .step-line { margin: 0 8px; }
   .content { padding-top: 8px; }
 }
+
+.timeline-toggle { display: flex; grid-column: 1 / -1; align-items: flex-start; gap: 12px; padding-top: 10px; border-top: 1px solid #d6cfc2; color: #171717; font-size: 12px; cursor: pointer; }
+.timeline-toggle .option-check { position: relative; margin-top: 1px; }
+.timeline-toggle strong { display: block; margin-bottom: 3px; font-weight: 800; }
+.timeline-toggle span span { color: #4a4640; line-height: 1.45; }
+.timeline-field[hidden] { display: none; }

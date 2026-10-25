@@ -683,8 +683,8 @@ function updateCreateProgress(progress) {
   const bar = $('createProgressBar');
   const text = $('createProgressText');
   const fraction = progress.total ? progress.current / progress.total : 0;
-  const stageBase = progress.stage === 'project' ? 0 : progress.stage === 'bins' ? .08 : progress.stage === 'import' ? .25 : 1;
-  const stageWeight = progress.stage === 'project' ? .08 : progress.stage === 'bins' ? .17 : progress.stage === 'import' ? .75 : 0;
+  const stageBase = progress.stage === 'project' ? 0 : progress.stage === 'bins' ? .08 : progress.stage === 'import' ? .25 : progress.stage === 'grade' ? .9 : 1;
+  const stageWeight = progress.stage === 'project' ? .08 : progress.stage === 'bins' ? .17 : progress.stage === 'import' ? .65 : progress.stage === 'grade' ? .09 : 0;
   bar.style.width = `${Math.min(99, Math.round((stageBase + stageWeight * fraction) * 100))}%`;
   text.textContent = progress.label || 'Préparation dans Resolve…';
 }
@@ -701,6 +701,12 @@ function renderCompletion(result) {
     ['Chutiers créés', result.createdBins.join(' · ')],
     ['Timeline', result.timelineName ? `${result.timelineName} · ${result.timelineFormat}` : 'Aucune timeline créée']
   ];
+  if (result.colorReport) {
+    const { applied, unrecognized, failed, output } = result.colorReport;
+    const total = applied + unrecognized.length + failed.length;
+    rows.push(['Color Space Transform', `${applied} / ${total} plan(s) · sortie ${output}`]);
+    if (unrecognized.length) rows.push(['Caméra non reconnue', unrecognized.slice(0, 4).join(', ') + (unrecognized.length > 4 ? ` et ${unrecognized.length - 4} autre(s)` : '')]);
+  }
   $('completionReport').innerHTML = rows.map(([label, value]) => `<div class="report-row"><span>${escapeHTML(label)}</span><span>${escapeHTML(value)}</span></div>`).join('');
   const warningParts = [result.warning, result.failedNames?.length ? `À vérifier : ${result.failedNames.slice(0, 6).join(', ')}${result.failedNames.length > 6 ? ` et ${result.failedNames.length - 6} autre(s)` : ''}.` : ''];
   $('completionWarning').textContent = warningParts.filter(Boolean).join(' ');
@@ -728,6 +734,8 @@ async function createProjectNow() {
       createTimeline: $('createTimeline').checked,
       timelineResolution: $('timelineResolution').value,
       timelineFrameRate: $('timelineFrameRate').value,
+      applyCst: $('applyCst').checked,
+      cstOutput: $('cstOutput').value,
       folders: state.folders.map(({ id, name }) => ({ id, name })),
       files: state.files.map(({ id, category, cameraBrand, cameraModel, shootingDate, include }) => ({ id, category, cameraBrand, cameraModel, shootingDate, include }))
     });
@@ -795,6 +803,20 @@ $('projectName').addEventListener('input', renderStructurePreview);
 $('createTimeline').addEventListener('change', (event) => {
   $('timelineControls').hidden = !event.target.checked;
 });
+$('applyCst').addEventListener('change', (event) => {
+  $('cstOutputField').hidden = !event.target.checked;
+  try { localStorage.setItem('rpm.applyCst', event.target.checked ? '1' : '0'); } catch (_) {}
+});
+$('cstOutput').addEventListener('change', (event) => {
+  try { localStorage.setItem('rpm.cstOutput', event.target.value); } catch (_) {}
+});
+try {
+  const savedCst = localStorage.getItem('rpm.applyCst');
+  if (savedCst !== null) $('applyCst').checked = savedCst === '1';
+  const savedOutput = localStorage.getItem('rpm.cstOutput');
+  if (savedOutput && [...$('cstOutput').options].some((option) => option.value === savedOutput)) $('cstOutput').value = savedOutput;
+  $('cstOutputField').hidden = !$('applyCst').checked;
+} catch (_) {}
 $('backToSources').addEventListener('click', () => setStep(2));
 $('chooseSources').addEventListener('click', chooseSources);
 $('refreshSources').addEventListener('click', refreshSources);

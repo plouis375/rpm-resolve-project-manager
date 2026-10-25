@@ -1,5 +1,13 @@
 # Historique des versions
 
+## v0.17 — 25 octobre 2026
+
+- Applique automatiquement un node Color Space Transform sur chaque plan de la timeline d’assemblage, selon la caméra : Sony FX3, FX6, FX9, Burano (S-Gamut3.Cine / S-Log3), Canon C50, C70 (Cinema Gamut / Canon Log 2), Canon R5 (Cinema Gamut / Canon Log 3).
+- Sortie au choix : Rec.709-A (visionnage sur Mac) ou Rec.709 Gamma 2.4 (diffusion). Le choix est mémorisé.
+- Presets `.drx` exportés depuis Resolve dans `plugin/presets`, correspondance caméra → profil dans `plugin/lib/cst.js` (testée).
+- Les plans de caméras non reconnues restent sans étalonnage et sont listés dans le rapport final.
+- Nouvel installeur `.pkg` avec écrans d’accueil en français : les utilisateurs n’ont plus de fichier `.command` à lancer. `make-installer.command` le fabrique (réservé au développeur).
+
 ## v0.16 — 25 octobre 2026
 
 - Corrige l’association des clips après import : le rapport d’échecs et la timeline d’assemblage restent justes même si un fichier d’un lot n’est pas importé.

@@ -11,6 +11,7 @@ const {
   VIDEO, SEQUENCE, SUPPORTED, FRAME_RATES, cleanText, categoryFor, normalizeBrand, normalizeDate, localDate,
   sidecarCandidates, filterSidecars, parseSidecarXml, markDuplicates, dominantFormat, nearestFrameRate, matchImported
 } = require('./lib/media');
+const { OUTPUTS, profileForCamera, presetFileName } = require('./lib/cst');
 
 const execFileAsync = promisify(execFile);
 const PLUGIN_ID = 'com.idolatry.resolveprojectcreationtool';
@@ -585,6 +586,58 @@ async function applyTimelineSettings(project, rushes, options) {
   };
 }
 
+// Applique un node Color Space Transform (preset .drx) à chaque plan de la timeline.
+async function applyColorTransforms(project, timeline, importedRushes, output) {
+  const report = { applied: 0, unrecognized: [], failed: [] };
+  const outputKey = OUTPUTS[output] ? output : 'rec709a';
+  try { await project.SetCurrentTimeline(timeline); } catch (_) {}
+  let items = [];
+  try { items = (await timeline.GetItemListInTrack('video', 1)) || []; } catch (_) {}
+  // Associe chaque plan à son rush par chemin de fichier ; repli sur l’ordre.
+  const byPath = new Map(importedRushes.map(({ file }) => [file.filePath, file]));
+  const pairs = [];
+  for (let index = 0; index < items.length; index += 1) {
+    let file = null;
+    try {
+      const mediaItem = await items[index].GetMediaPoolItem();
+      file = byPath.get(await mediaItem?.GetClipProperty('File Path')) || null;
+    } catch (_) {}
+    if (!file && items.length === importedRushes.length) file = importedRushes[index].file;
+    pairs.push({ item: items[index], file });
+  }
+  const groups = new Map();
+  for (const { item, file } of pairs) {
+    const profile = file ? profileForCamera(file.cameraBrand, file.cameraModel) : null;
+    if (!profile) { report.unrecognized.push(file?.name || 'Plan sans rush associé'); continue; }
+    if (!groups.has(profile)) groups.set(profile, []);
+    groups.get(profile).push({ item, file });
+  }
+  for (const [profile, entries] of groups) {
+    const presetPath = path.join(__dirname, 'presets', presetFileName(profile, outputKey));
+    try { await fs.access(presetPath); } catch (_) {
+      report.failed.push(...entries.map(({ file }) => file.name));
+      continue;
+    }
+    const pending = [];
+    for (const entry of entries) {
+      let ok = false;
+      try {
+        const graph = await entry.item.GetNodeGraph();
+        if (graph) ok = Boolean(await graph.ApplyGradeFromDRX(presetPath, 0));
+      } catch (_) {}
+      if (ok) report.applied += 1; else pending.push(entry);
+    }
+    // Repli pour les versions de Resolve sans graph.ApplyGradeFromDRX.
+    if (pending.length) {
+      let ok = false;
+      try { ok = Boolean(await timeline.ApplyGradeFromDRX(presetPath, 0, pending.map(({ item }) => item))); } catch (_) {}
+      if (ok) report.applied += pending.length;
+      else report.failed.push(...pending.map(({ file }) => file.name));
+    }
+  }
+  return report;
+}
+
 async function createProject(event, options) {
   if (!integrationReady || !projectManager) throw new Error(integrationError || 'Connexion à Resolve indisponible.');
   if (creationInProgress) throw new Error('Création déjà en cours.');
@@ -713,6 +766,7 @@ async function createProject(event, options) {
     let timelineName = '';
     let timelineFormat = '';
     let timelineWarning = timelineSettings?.warning || '';
+    let colorReport = null;
     if (options.createTimeline && importedRushes.length) {
       const selectedFolder = await mediaPool.SetCurrentFolder(bins.Séquences || root);
       if (!selectedFolder) throw new Error('Resolve n’a pas pu sélectionner le chutier Séquences.');
@@ -723,6 +777,12 @@ async function createProject(event, options) {
         timelineWarning = 'Resolve n’a pas créé la timeline. Le projet et les médias sont conservés.';
       } else {
         timelineFormat = timelineSettings.label;
+        if (options.applyCst) {
+          sendProgress(event, { stage: 'grade', current: 0, total: 1, label: 'Application des Color Space Transform' });
+          colorReport = await applyColorTransforms(project, timeline, importedRushes, options.cstOutput);
+          colorReport.output = OUTPUTS[options.cstOutput] || OUTPUTS.rec709a;
+          sendProgress(event, { stage: 'grade', current: 1, total: 1, label: 'Application des Color Space Transform' });
+        }
       }
     } else if (options.createTimeline) {
       timelineWarning = 'Aucun rush vidéo retenu. La timeline d’assemblage n’a pas été créée.';
@@ -740,7 +800,10 @@ async function createProject(event, options) {
       createdBins: folders.map((folder) => folder.name),
       timelineName,
       timelineFormat,
-      warning: [timelineWarning, failures.length ? `${failures.length} média(s) n’ont pas été importés.` : '', sequenceFailures.length ? `${sequenceFailures.length} séquence(s) n’ont pas été importées.` : ''].filter(Boolean).join(' '),
+      colorReport,
+      warning: [timelineWarning,
+        colorReport?.unrecognized.length ? `${colorReport.unrecognized.length} plan(s) sans CST : caméra non reconnue.` : '',
+        colorReport?.failed.length ? `Resolve n’a pas appliqué le CST sur ${colorReport.failed.length} plan(s).` : '', failures.length ? `${failures.length} média(s) n’ont pas été importés.` : '', sequenceFailures.length ? `${sequenceFailures.length} séquence(s) n’ont pas été importées.` : ''].filter(Boolean).join(' '),
       savedProject
     };
   } catch (error) {
