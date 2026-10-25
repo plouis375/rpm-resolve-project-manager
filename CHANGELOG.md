@@ -1,5 +1,9 @@
 # Historique des versions
 
+## v0.19.0
+
+- Nouvelle esthétique : thème sombre inspiré de DaVinci Resolve (fond anthracite, filets gris, accent orange) à la place du thème papier.
+
 ## v0.18.4
 
 - L’option « Appliquer un Color Space Transform » prévient que l’étape peut être longue avec beaucoup de rushs.
