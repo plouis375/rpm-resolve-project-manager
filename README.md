@@ -147,3 +147,7 @@ Les proxies sont écrits dans des sous-dossiers `proxy` à côté des médias, e
 2. Committe les changements.
 3. Lance `bash package.command` pour fabriquer le `.pkg`.
 4. Crée le tag et la release GitHub avec le `.pkg` en pièce jointe.
+
+## Licence
+
+Tous droits réservés. Le code est visible publiquement, mais sa réutilisation, sa copie et sa redistribution ne sont pas autorisées sans accord écrit de l’auteur.
