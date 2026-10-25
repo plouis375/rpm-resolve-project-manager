@@ -1,6 +1,6 @@
 {
-  "name": "resolve-project-creation-tool",
-  "version": "0.15.0",
+  "name": "rpm-resolve-project-manager",
+  "version": "0.18.0",
   "description": "Assistant de création de projet pour DaVinci Resolve Studio",
   "main": "main.js"
 }

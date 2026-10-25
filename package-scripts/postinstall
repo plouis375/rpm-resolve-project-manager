@@ -18,5 +18,5 @@ if [ -f "$MARKER" ]; then
   if [ -d "$BACKUP" ]; then mv "$BACKUP" "$TARGET"; fi
   rm -f "$MARKER"
 fi
-printf 'Resolve Project Creation Tool incomplet; version précédente restaurée si disponible.\n' >&2
+printf 'RPM - Resolve Project Manager incomplet; version précédente restaurée si disponible.\n' >&2
 exit 1

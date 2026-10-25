@@ -137,7 +137,7 @@ h2 { margin: 0; font-size: 14px; font-weight: 650; letter-spacing: -.01em; }
 .media-table td { height: 58px; padding: 6px 12px; border-right: 1px solid #25282d; border-bottom: 1px solid #282b30; color: #dfe2e6; font-size: 12px; vertical-align: middle; }
 .media-table tr:last-child td { border-bottom: 0; }
 .media-table th:last-child,.media-table td:last-child { border-right: 0; }
-.file-col { width: 30%; }.type-col { width: 16%; }.destination-col { width: 31%; }.size-col { width: 9%; }.duration-col { width: 10%; }.include-col { width: 38px; }
+.file-col { width: 25%; }.type-col { width: 13%; }.destination-col { width: 29%; }.profile-col { width: 16%; }.size-col { width: 8%; }.duration-col { width: 9%; }.include-col { width: 38px; }
 .file-cell { display: flex; min-width: 0; align-items: center; gap: 10px; }
 .file-symbol { display: grid; width: 22px; height: 27px; flex: 0 0 22px; place-items: center; border: 1px solid #69727d; border-radius: 3px; color: #9ba5b1; font-size: 8px; font-weight: 700; }
 .file-copy { min-width: 0; }
@@ -390,3 +390,18 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   .step-line { margin: 0 8px; }
   .content { padding-top: 8px; }
 }
+
+.timeline-toggle { display: flex; grid-column: 1 / -1; align-items: flex-start; gap: 12px; padding-top: 10px; border-top: 1px solid #d6cfc2; color: #171717; font-size: 12px; cursor: pointer; }
+.timeline-toggle .option-check { position: relative; margin-top: 1px; }
+.timeline-toggle strong { display: block; margin-bottom: 3px; font-weight: 800; }
+.timeline-toggle span span { color: #4a4640; line-height: 1.45; }
+.timeline-field[hidden] { display: none; }
+
+.media-table { min-width: 1120px; }
+.profile-select { width: 100%; }
+.profile-select.profile-unknown { color: #8a857c; font-style: italic; }
+.profile-none { color: #8a857c; }
+.timeline-toggle.compact-toggle { padding-top: 0; border-top: 0; }
+.app-meta { margin-left: 14px; color: #8a857c; font-size: 11px; }
+.link-button { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+.link-button:hover { color: var(--red); }

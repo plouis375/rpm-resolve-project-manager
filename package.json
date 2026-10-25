@@ -1,0 +1,5 @@
+{
+  "name": "rpm-resolve-project-manager-dev",
+  "private": true,
+  "scripts": { "test": "TZ=Europe/Paris node --test tests/*.test.js" }
+}

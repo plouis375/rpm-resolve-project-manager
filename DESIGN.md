@@ -2,7 +2,7 @@
 
 ## Surface
 
-Resolve Project Creation Tool is a temporary four-step setup assistant opened from Resolve Studio's Workflow Integrations menu. It closes after setup so the editor can continue in Resolve.
+RPM - Resolve Project Manager is a temporary four-step setup assistant opened from Resolve Studio's Workflow Integrations menu. It closes after setup so the editor can continue in Resolve.
 
 ## Approved visual direction
 

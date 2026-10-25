@@ -399,6 +399,26 @@ function renderSources() {
   });
 }
 
+// Profils couleur (à garder synchronisé avec plugin/lib/cst.js).
+const COLOR_PROFILES = [
+  ['', 'Non reconnu · aucun CST'],
+  ['sony-slog3', 'S-Log3 · S-Gamut3.Cine'],
+  ['canon-clog2', 'Canon Log 2'],
+  ['canon-clog3', 'Canon Log 3'],
+  ['none', 'Aucun CST · déjà en Rec.709']
+];
+const CAMERA_PROFILES = [
+  [/\bFX3\b|\bFX6V?\b|\bFX9\b|\bBURANO\b|\bMPC-2610\b/i, 'sony-slog3'],
+  [/\bC50\b|\bC70\b/i, 'canon-clog2'],
+  [/\bR5(?:\s?C)?\b/i, 'canon-clog3']
+];
+function autoColorProfile(file) {
+  const gamma = String(file.captureGamma || '').toLowerCase();
+  if (gamma) return /s-?log3/.test(gamma) ? 'sony-slog3' : /log/.test(gamma) ? '' : 'none';
+  const input = `${file.cameraBrand || ''} ${file.cameraModel || ''}`;
+  return CAMERA_PROFILES.find(([pattern]) => pattern.test(input))?.[1] || '';
+}
+
 function reviewReasons(file) {
   const reasons = [];
   if (file.size === 0) reasons.push({ id: 'empty', label: 'Fichier vide' });
@@ -441,21 +461,24 @@ function renderTable() {
   renderReviewFilters();
 
   if (!visible.length) {
-    $('mediaRows').innerHTML = '<tr><td class="empty-filter" colspan="6">Aucun média ne correspond à cette recherche.</td></tr>';
+    $('mediaRows').innerHTML = '<tr><td class="empty-filter" colspan="7">Aucun média ne correspond à cette recherche.</td></tr>';
   } else {
     $('mediaRows').innerHTML = visible.map((file) => {
       const badges = reviewReasons(file).map((reason) => `<span class="review-mark ${reason.id}-mark">${escapeHTML(reason.label)}</span>`).join('');
       const destination = file.category === 'Rushs'
         ? `<div class="destination-edit"><input data-edit="cameraBrand" data-file="${file.id}" value="${escapeHTML(file.cameraBrand)}" placeholder="Marque" aria-label="Marque de caméra pour ${escapeHTML(file.name)}"><input data-edit="cameraModel" data-file="${file.id}" value="${escapeHTML(file.cameraModel)}" placeholder="Modèle" aria-label="Modèle de caméra pour ${escapeHTML(file.name)}"><input type="date" data-edit="shootingDate" data-file="${file.id}" value="${escapeHTML(file.shootingDate)}" aria-label="Date de tournage pour ${escapeHTML(file.name)}"></div>`
         : `<span class="destination-path" title="${escapeHTML(folderName(file.category))}">${escapeHTML(folderName(file.category))}</span>`;
-      return `<tr data-row="${file.id}" class="${file.duplicateOf ? 'duplicate-row' : ''}"><td><div class="file-cell"><span class="file-symbol">${categoryColor(file.category)}</span><div class="file-copy"><div class="file-name" title="${escapeHTML(file.name)}">${escapeHTML(file.name)}</div><div class="file-path" title="${escapeHTML(file.filePath)}">${escapeHTML(file.filePath)}</div><div class="review-marks">${badges}</div></div></div></td><td><select class="type-select" data-category="${file.id}" aria-label="Type de ${escapeHTML(file.name)}">${state.folders.map((folder) => `<option value="${escapeHTML(folder.id)}"${file.category === folder.id ? ' selected' : ''}>${escapeHTML(folder.name)}</option>`).join('')}</select></td><td><div class="destination-cell"><span class="folder-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 5.5h6l1.4 1.6H18v8.9H2z"/><path d="M2 5.5V4h6l1.4 1.6"/></svg></span>${destination}</div></td><td class="size-cell">${bytesLabel(file.size)}</td><td class="duration-cell">${durationLabel(file.duration)}</td><td><input class="row-toggle" type="checkbox" data-include="${file.id}" ${file.include ? 'checked' : ''} aria-label="Inclure ${escapeHTML(file.name)}"></td></tr>`;
+      const profileCell = file.category === 'Rushs'
+        ? `<select class="type-select profile-select${file.colorProfile ? '' : ' profile-unknown'}" data-profile="${file.id}" aria-label="Profil couleur de ${escapeHTML(file.name)}" title="${file.colorProfileManual ? 'Choisi à la main' : 'Détecté automatiquement'}">${COLOR_PROFILES.map(([value, label]) => `<option value="${value}"${(file.colorProfile || '') === value ? ' selected' : ''}>${escapeHTML(label)}</option>`).join('')}</select>`
+        : '<span class="profile-none">—</span>';
+      return `<tr data-row="${file.id}" class="${file.duplicateOf ? 'duplicate-row' : ''}"><td><div class="file-cell"><span class="file-symbol">${categoryColor(file.category)}</span><div class="file-copy"><div class="file-name" title="${escapeHTML(file.name)}">${escapeHTML(file.name)}</div><div class="file-path" title="${escapeHTML(file.filePath)}">${escapeHTML(file.filePath)}</div><div class="review-marks">${badges}</div></div></div></td><td><select class="type-select" data-category="${file.id}" aria-label="Type de ${escapeHTML(file.name)}">${state.folders.map((folder) => `<option value="${escapeHTML(folder.id)}"${file.category === folder.id ? ' selected' : ''}>${escapeHTML(folder.name)}</option>`).join('')}</select></td><td><div class="destination-cell"><span class="folder-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 5.5h6l1.4 1.6H18v8.9H2z"/><path d="M2 5.5V4h6l1.4 1.6"/></svg></span>${destination}</div></td><td>${profileCell}</td><td class="size-cell">${bytesLabel(file.size)}</td><td class="duration-cell">${durationLabel(file.duration)}</td><td><input class="row-toggle" type="checkbox" data-include="${file.id}" ${file.include ? 'checked' : ''} aria-label="Inclure ${escapeHTML(file.name)}"></td></tr>`;
     }).join('');
   }
 
   updateReviewCount();
   if (pageCount > 1) {
     const row = document.createElement('tr');
-    row.innerHTML = `<td colspan="6" class="page-row"><button class="button secondary compact" id="previousPage" ${state.page === 0 ? 'disabled' : ''}>Précédent</button><span>Page ${state.page + 1} sur ${pageCount} · ${filtered.length} médias affichés</span><button class="button secondary compact" id="nextPage" ${state.page + 1 === pageCount ? 'disabled' : ''}>Suivante</button></td>`;
+    row.innerHTML = `<td colspan="7" class="page-row"><button class="button secondary compact" id="previousPage" ${state.page === 0 ? 'disabled' : ''}>Précédent</button><span>Page ${state.page + 1} sur ${pageCount} · ${filtered.length} médias affichés</span><button class="button secondary compact" id="nextPage" ${state.page + 1 === pageCount ? 'disabled' : ''}>Suivante</button></td>`;
     $('mediaRows').append(row);
     $('previousPage').addEventListener('click', () => { state.page -= 1; renderTable(); });
     $('nextPage').addEventListener('click', () => { state.page += 1; renderTable(); });
@@ -469,6 +492,15 @@ function renderTable() {
       renderProjectPreview();
     });
   });
+  document.querySelectorAll('[data-profile]').forEach((select) => {
+    select.addEventListener('change', () => {
+      const file = state.files.find((item) => item.id === select.dataset.profile);
+      if (!file) return;
+      file.colorProfile = select.value;
+      file.colorProfileManual = select.value !== autoColorProfile(file);
+      select.classList.toggle('profile-unknown', !select.value);
+    });
+  });
   document.querySelectorAll('[data-edit]').forEach((input) => {
     input.addEventListener('input', () => {
       const file = state.files.find((item) => item.id === input.dataset.file);
@@ -477,6 +509,7 @@ function renderTable() {
     input.addEventListener('change', () => {
       const file = state.files.find((item) => item.id === input.dataset.file);
       if (file) file[input.dataset.edit] = input.value;
+      if (file && !file.colorProfileManual && (input.dataset.edit === 'cameraBrand' || input.dataset.edit === 'cameraModel')) file.colorProfile = autoColorProfile(file);
       renderTable();
       renderProjectPreview();
     });
@@ -586,6 +619,8 @@ async function scanSelectedSources(pathsToScan = state.sourcePaths, previousStat
         cameraBrand: old.cameraBrand,
         cameraModel: old.cameraModel,
         shootingDate: old.shootingDate,
+        colorProfile: old.colorProfile,
+        colorProfileManual: old.colorProfileManual,
         dateSource: old.dateSource,
         include: old.includeManuallyChanged ? old.include : file.include,
         includeManuallyChanged: old.includeManuallyChanged,
@@ -683,8 +718,8 @@ function updateCreateProgress(progress) {
   const bar = $('createProgressBar');
   const text = $('createProgressText');
   const fraction = progress.total ? progress.current / progress.total : 0;
-  const stageBase = progress.stage === 'project' ? 0 : progress.stage === 'bins' ? .08 : progress.stage === 'import' ? .25 : 1;
-  const stageWeight = progress.stage === 'project' ? .08 : progress.stage === 'bins' ? .17 : progress.stage === 'import' ? .75 : 0;
+  const stageBase = progress.stage === 'project' ? 0 : progress.stage === 'bins' ? .08 : progress.stage === 'import' ? .25 : progress.stage === 'grade' ? .9 : 1;
+  const stageWeight = progress.stage === 'project' ? .08 : progress.stage === 'bins' ? .17 : progress.stage === 'import' ? .65 : progress.stage === 'grade' ? .09 : 0;
   bar.style.width = `${Math.min(99, Math.round((stageBase + stageWeight * fraction) * 100))}%`;
   text.textContent = progress.label || 'Préparation dans Resolve…';
 }
@@ -701,6 +736,14 @@ function renderCompletion(result) {
     ['Chutiers créés', result.createdBins.join(' · ')],
     ['Timeline', result.timelineName ? `${result.timelineName} · ${result.timelineFormat}` : 'Aucune timeline créée']
   ];
+  if (result.extraTimelines?.length) rows.push(['Timelines supplémentaires', result.extraTimelines.map((n) => n.split(' — ').pop()).join(' · ')]);
+  if (result.colorReport) {
+    const { applied, unrecognized, failed, output } = result.colorReport;
+    const skipped = result.colorReport.skipped || 0;
+    const total = applied + skipped + unrecognized.length + failed.length;
+    rows.push(['Color Space Transform', `${applied} / ${total} plan(s) · sortie ${output}${skipped ? ` · ${skipped} déjà en Rec.709` : ''}`]);
+    if (unrecognized.length) rows.push(['Caméra non reconnue', unrecognized.slice(0, 4).join(', ') + (unrecognized.length > 4 ? ` et ${unrecognized.length - 4} autre(s)` : '')]);
+  }
   $('completionReport').innerHTML = rows.map(([label, value]) => `<div class="report-row"><span>${escapeHTML(label)}</span><span>${escapeHTML(value)}</span></div>`).join('');
   const warningParts = [result.warning, result.failedNames?.length ? `À vérifier : ${result.failedNames.slice(0, 6).join(', ')}${result.failedNames.length > 6 ? ` et ${result.failedNames.length - 6} autre(s)` : ''}.` : ''];
   $('completionWarning').textContent = warningParts.filter(Boolean).join(' ');
@@ -728,8 +771,12 @@ async function createProjectNow() {
       createTimeline: $('createTimeline').checked,
       timelineResolution: $('timelineResolution').value,
       timelineFrameRate: $('timelineFrameRate').value,
+      applyCst: $('applyCst').checked,
+      timelinePerCamera: $('timelinePerCamera').checked,
+      timelinePerDay: $('timelinePerDay').checked,
+      cstOutput: $('cstOutput').value,
       folders: state.folders.map(({ id, name }) => ({ id, name })),
-      files: state.files.map(({ id, category, cameraBrand, cameraModel, shootingDate, include }) => ({ id, category, cameraBrand, cameraModel, shootingDate, include }))
+      files: state.files.map(({ id, category, cameraBrand, cameraModel, shootingDate, colorProfile, include }) => ({ id, category, cameraBrand, cameraModel, shootingDate, colorProfile: colorProfile || '', include }))
     });
     renderCompletion(result);
   } catch (error) {
@@ -795,7 +842,24 @@ $('projectName').addEventListener('input', renderStructurePreview);
 $('createTimeline').addEventListener('change', (event) => {
   $('timelineControls').hidden = !event.target.checked;
 });
+$('applyCst').addEventListener('change', (event) => {
+  $('cstOutputField').hidden = !event.target.checked;
+  try { localStorage.setItem('rpm.applyCst', event.target.checked ? '1' : '0'); } catch (_) {}
+});
+$('cstOutput').addEventListener('change', (event) => {
+  try { localStorage.setItem('rpm.cstOutput', event.target.value); } catch (_) {}
+});
+try {
+  const savedCst = localStorage.getItem('rpm.applyCst');
+  if (savedCst !== null) $('applyCst').checked = savedCst === '1';
+  const savedOutput = localStorage.getItem('rpm.cstOutput');
+  if (savedOutput && [...$('cstOutput').options].some((option) => option.value === savedOutput)) $('cstOutput').value = savedOutput;
+  $('cstOutputField').hidden = !$('applyCst').checked;
+} catch (_) {}
 $('backToSources').addEventListener('click', () => setStep(2));
+$('uninstallPlugin').addEventListener('click', async () => {
+  try { await window.projectTool.uninstall(); } catch (error) { showToast(error.message); }
+});
 $('chooseSources').addEventListener('click', chooseSources);
 $('refreshSources').addEventListener('click', refreshSources);
 $('createNow').addEventListener('click', createProjectNow);

@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>Resolve Project Creation Tool</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'">
+  <title>RPM - Resolve Project Manager</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -12,7 +13,7 @@
     <header class="topbar">
       <div class="brand-lockup">
         <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-        <strong>Resolve Project Creation Tool</strong>
+        <strong>RPM - Resolve Project Manager</strong>
         <span class="slash">/</span>
         <span class="topbar-context">Préparer un nouveau projet</span>
       </div>
@@ -47,7 +48,7 @@
           <div class="bin-list" id="binPreview"></div>
         </div>
         <div class="view-footer">
-          <div class="connection-wrap"><span class="muted" id="connectionState">Connexion à Resolve…</span><button class="button secondary compact" id="retryConnection" hidden>Reconnecter</button></div>
+          <div class="connection-wrap"><span class="muted" id="connectionState">Connexion à Resolve…</span><button class="button secondary compact" id="retryConnection" hidden>Reconnecter</button><span class="app-meta">v0.18 · <button class="link-button" id="uninstallPlugin" type="button">Désinstaller</button></span></div>
           <button class="button primary" id="toSources" disabled>Continuer</button>
         </div>
       </section>
@@ -100,7 +101,7 @@
 
         <div class="media-table-wrap" id="tableWrap" hidden>
           <table class="media-table">
-            <thead><tr><th class="file-col">Fichier</th><th class="type-col">Type proposé</th><th class="destination-col">Classement dans Resolve</th><th class="size-col">Taille</th><th class="duration-col">Durée</th><th class="include-col"><span class="sr-only">Inclure</span></th></tr></thead>
+            <thead><tr><th class="file-col">Fichier</th><th class="type-col">Type proposé</th><th class="destination-col">Classement dans Resolve</th><th class="profile-col">Profil couleur</th><th class="size-col">Taille</th><th class="duration-col">Durée</th><th class="include-col"><span class="sr-only">Inclure</span></th></tr></thead>
             <tbody id="mediaRows"></tbody>
           </table>
         </div>
@@ -178,6 +179,22 @@
               <option value="60">60 i/s</option>
             </select></label>
             <p class="timeline-note">En automatique, l’assistant reprend le format principal des rushs. S’il n’y a pas de format majoritaire, il propose du 1920 × 1080 à 24 i/s.</p>
+            <label class="timeline-toggle">
+              <span class="option-check"><input id="timelinePerCamera" type="checkbox"><span class="checkmark"></span></span>
+              <span><strong>Une timeline par caméra</strong><span>En plus de l’assemblage, crée une timeline pour chaque caméra (si le tournage en compte plusieurs).</span></span>
+            </label>
+            <label class="timeline-toggle compact-toggle">
+              <span class="option-check"><input id="timelinePerDay" type="checkbox"><span class="checkmark"></span></span>
+              <span><strong>Une timeline par jour de tournage</strong><span>Crée une timeline pour chaque date (si le tournage s’étale sur plusieurs jours).</span></span>
+            </label>
+            <label class="timeline-toggle">
+              <span class="option-check"><input id="applyCst" type="checkbox" checked><span class="checkmark"></span></span>
+              <span><strong>Appliquer un Color Space Transform</strong><span>Ajoute un node CST sur chaque plan selon la colonne « Profil couleur » de l’étape Sources (détectée automatiquement : Sony FX3, FX6, FX9, Burano en S-Log3 · Canon C50, C70 en Canon Log 2 · Canon R5 en Canon Log 3). Les plans sans profil restent sans étalonnage.</span></span>
+            </label>
+            <label class="timeline-field" id="cstOutputField"><span>Sortie du CST</span><select id="cstOutput">
+              <option value="rec709a">Rec.709-A · visionnage sur Mac</option>
+              <option value="gamma24">Rec.709 Gamma 2.4 · diffusion</option>
+            </select></label>
           </div>
           <label class="option-row">
             <span class="option-check"><input id="prepareProxies" type="checkbox"><span class="checkmark"></span></span>

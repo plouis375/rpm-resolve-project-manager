@@ -1,5 +1,35 @@
 # Historique des versions
 
+## v0.18 — 25 octobre 2026
+
+- Nouvelle colonne **Profil couleur** à l’étape Sources : détectée automatiquement et modifiable plan par plan (S-Log3, Canon Log 2, Canon Log 3, ou aucun CST).
+- Lecture du gamma enregistré dans les XML Sony : un plan tourné en S-Log3 reçoit le CST, un plan en Rec.709, HLG ou S-Cinetone n’en reçoit pas.
+- Timelines supplémentaires au choix : une par caméra et/ou une par jour de tournage, avec le CST appliqué elles aussi.
+- Bouton **Désinstaller** dans le plugin (confirmation et mot de passe macOS). Il remplace `uninstall.command`.
+- `Publier une version.command` : fabrique le `.pkg`, envoie le code et crée la release GitHub avec le `.pkg` en téléchargement. `Envoyer sur GitHub.command` envoie seulement le code. Les deux se connectent à GitHub par le navigateur (compatible connexion Google).
+
+## v0.17 — 25 octobre 2026
+
+- Applique automatiquement un node Color Space Transform sur chaque plan de la timeline d’assemblage, selon la caméra : Sony FX3, FX6, FX9, Burano (S-Gamut3.Cine / S-Log3), Canon C50, C70 (Cinema Gamut / Canon Log 2), Canon R5 (Cinema Gamut / Canon Log 3).
+- Sortie au choix : Rec.709-A (visionnage sur Mac) ou Rec.709 Gamma 2.4 (diffusion). Le choix est mémorisé.
+- Presets `.drx` exportés depuis Resolve dans `plugin/presets`, correspondance caméra → profil dans `plugin/lib/cst.js` (testée).
+- Les plans de caméras non reconnues restent sans étalonnage et sont listés dans le rapport final.
+- Nouvel installeur `.pkg` avec écrans d’accueil en français : les utilisateurs n’ont plus de fichier `.command` à lancer. `package.command` le fabrique (réservé au développeur).
+- Le plugin s’appelle désormais **RPM - Resolve Project Manager** (dépôt GitHub `rpm-resolve-project-manager`). L’identifiant technique ne change pas : la mise à jour remplace bien l’ancienne version et conserve tes préférences.
+
+## v0.16 — 25 octobre 2026
+
+- Corrige l’association des clips après import : le rapport d’échecs et la timeline d’assemblage restent justes même si un fichier d’un lot n’est pas importé.
+- Applique le format de timeline (résolution, fréquence) avant l’import, réglage par réglage via `SetSetting`. Les fréquences non standard sont ramenées à la plus proche.
+- Reconnaît les sidecars XML Sony (`C0001M01.XML`) : ils ne sont plus pris pour des séquences, et leur marque, modèle et date servent au classement.
+- Convertit les dates de tournage UTC en heure locale (fin du décalage d’un jour pour les plans tournés autour de minuit).
+- Détecte aussi les doublons de fichiers sans durée (images, PDF…).
+- Reconnaissance des marques par mots entiers (« red » dans un autre mot ne donne plus RED).
+- Comparaison des doublons plus rapide : empreinte des 4 premiers et 4 derniers Mo, lecture complète seulement si nécessaire.
+- `install.command` et `uninstall.command` demandent les droits administrateur ; les sauvegardes vont dans `.backups`.
+- Politique de sécurité (CSP) dans l’interface, fond de fenêtre assorti au thème clair.
+- Logique de classement extraite dans `plugin/lib/media.js` et couverte par des tests (`npm test`).
+
 ## v0.15 — 17 octobre 2026
 
 - Permet de choisir indépendamment la résolution et la fréquence d’images de la timeline d’assemblage.
