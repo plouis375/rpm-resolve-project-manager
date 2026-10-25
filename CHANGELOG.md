@@ -1,5 +1,9 @@
 # Historique des versions
 
+## v0.18.3
+
+- Correctif : après installation, le plugin n’apparaissait plus dans Resolve. Le paquet contenait des fichiers lisibles seulement par le compte qui l’a fabriqué ; le build force désormais des permissions lisibles par tous.
+
 ## v0.18.2
 
 - Correctif : un import Resolve bloqué ne fige plus la création. Chaque lot d’import a un délai de 120 s ; un lot sans réponse est signalé « à vérifier » dans le rapport final.

@@ -19,7 +19,11 @@ mkdir -p "$DIST_ROOT"
 STAGING="$(mktemp -d "$DIST_ROOT/.rpc-tool.XXXXXX")"
 trap 'rm -rf "$STAGING"' EXIT
 cp -R "$ROOT/plugin/." "$STAGING/plugin/"
-chmod 755 "$STAGING/plugin/ffprobe"
+# Resolve tourne sous le compte de l’utilisateur : le plugin doit être lisible par tous,
+# indépendamment des permissions locales du dépôt (sinon il n’apparaît pas dans Resolve).
+find "$STAGING/plugin" -type d -exec chmod 755 {} +
+find "$STAGING/plugin" -type f -exec chmod 644 {} +
+chmod 755 "$STAGING/plugin/ffprobe" "$STAGING/plugin/WorkflowIntegration.node"
 cp "$WORKFLOW_PLUGIN" "$STAGING/plugin/WorkflowIntegration.node"
 
 if [ -e "$DEST" ]; then
