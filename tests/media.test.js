@@ -26,7 +26,7 @@ test('filterSidecars : Canon et Sony', () => {
 });
 
 test('parseSidecarXml : Canon, Sony, et refus des entités', () => {
-  assert.deepEqual(m.parseSidecarXml('<Device><Manufacturer>CANON</Manufacturer><ModelName>EOS C70</ModelName></Device>'), { cameraMake: 'CANON', cameraModel: 'EOS C70', date: '' });
+  assert.deepEqual(m.parseSidecarXml('<Device><Manufacturer>CANON</Manufacturer><ModelName>EOS C70</ModelName></Device>'), { cameraMake: 'CANON', cameraModel: 'EOS C70', date: '', captureGamma: '', capturePrimaries: '' });
   const sony = m.parseSidecarXml('<NonRealTimeMeta><CreationDate value="2026-09-12T10:00:00+02:00"/><Device manufacturer="Sony" modelName="ILME-FX6V"/></NonRealTimeMeta>');
   assert.equal(sony.cameraModel, 'ILME-FX6V');
   assert.equal(sony.date, '2026-09-12');
@@ -59,4 +59,11 @@ test('dominantFormat et nearestFrameRate', () => {
   const d = m.dominantFormat([{ width: 3840, height: 2160, fps: 25 }, { width: 3840, height: 2160, fps: 25 }, { width: 1920, height: 1080, fps: 50 }]);
   assert.deepEqual([d.width, d.height, d.fps], [3840, 2160, 25]);
   assert.deepEqual(m.dominantFormat([]), { width: 1920, height: 1080, fps: 24 });
+});
+
+test('parseSidecarXml : gamma Sony', () => {
+  const x = '<NonRealTimeMeta><Device manufacturer="Sony" modelName="ILME-FX3"/><AcquisitionRecord><Group name="CameraUnitMetadataSet"><Item name="CaptureGammaEquation" value="s-log3-cine"/><Item name="CaptureColorPrimaries" value="s-gamut3-cine"/></Group></AcquisitionRecord></NonRealTimeMeta>';
+  const r = m.parseSidecarXml(x);
+  assert.equal(r.captureGamma, 's-log3-cine');
+  assert.equal(r.capturePrimaries, 's-gamut3-cine');
 });

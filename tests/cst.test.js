@@ -33,3 +33,11 @@ test('presetFileName : tous les presets existent', () => {
   }
   assert.equal(c.presetFileName('inconnu', 'rec709a'), null);
 });
+
+test('profileFromMetadata : gamma Sony prioritaire', () => {
+  assert.equal(c.profileFromMetadata('Sony', 'ILME-FX6V', 's-log3-cine'), 'sony-slog3');
+  assert.equal(c.profileFromMetadata('Sony', 'ILME-FX3', 'rec709'), 'none');
+  assert.equal(c.profileFromMetadata('Sony', 'ILME-FX3', 'hlg'), 'none');
+  assert.equal(c.profileFromMetadata('Sony', 'ILME-FX3', 's-log2'), null);
+  assert.equal(c.profileFromMetadata('Canon', 'EOS C70', ''), 'canon-clog2');
+});

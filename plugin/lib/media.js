@@ -96,7 +96,16 @@ function parseSidecarXml(xml) {
   const make = leaf('Manufacturer') || attr('Device', 'manufacturer');
   const model = leaf('ModelName') || attr('Device', 'modelName');
   const date = attr('CreationDate', 'value');
-  return make || model || date ? { cameraMake: make, cameraModel: model, date: normalizeDate(date) } : null;
+  // Sony : <Item name="CaptureGammaEquation" value="s-log3-cine"/>
+  const item = (name) => {
+    const match = xml.match(new RegExp(`<Item\\b[^>]*\\bname="${name}"[^>]*\\bvalue="([^"]*)"`, 'i'));
+    return match ? cleanText(decode(match[1])) : '';
+  };
+  const captureGamma = item('CaptureGammaEquation');
+  const capturePrimaries = item('CaptureColorPrimaries');
+  return make || model || date || captureGamma
+    ? { cameraMake: make, cameraModel: model, date: normalizeDate(date), captureGamma, capturePrimaries }
+    : null;
 }
 
 // Doublons probables : nom + taille, + durée quand elle est connue.

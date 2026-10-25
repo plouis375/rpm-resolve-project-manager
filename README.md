@@ -1,4 +1,4 @@
-# RPM - Resolve Project Manager — v0.17
+# RPM - Resolve Project Manager — v0.18
 
 Assistant macOS intégré à **DaVinci Resolve Studio** pour créer un projet, trier les médias dans le Media Pool et préparer le montage. Il s’ouvre depuis le menu de Resolve, guide la préparation, puis se ferme quand le projet est prêt.
 
@@ -19,14 +19,14 @@ Le plugin a été vérifié avec DaVinci Resolve Studio 21.1.1 sur macOS. Le fon
 
 ### Installeur graphique
 
-1. Télécharge `RPM-Resolve-Project-Manager-v0.17.0.pkg` depuis la [dernière version](https://github.com/plouis375/rpm-resolve-project-manager/releases/latest).
+1. Télécharge `RPM-Resolve-Project-Manager-v0.18.0.pkg` depuis la [dernière version](https://github.com/plouis375/rpm-resolve-project-manager/releases/latest).
 2. Ferme DaVinci Resolve, puis ouvre le `.pkg` par double-clic et suis les étapes de l’installeur macOS. Il demande un mot de passe administrateur pour copier le plugin dans le dossier partagé de Resolve.
 3. Si macOS bloque le paquet parce qu’il n’est pas signé, ouvre **Réglages Système → Confidentialité et sécurité**, puis choisis **Ouvrir quand même** pour ce paquet. Ce paquet n’est pas signé ni notarié faute de compte développeur Apple.
 4. Rouvre Resolve et choisis **Workspace → Workflow Integrations → RPM - Resolve Project Manager**.
 
 Une sauvegarde horodatée de la version précédente est conservée dans `.backups`, à l’intérieur du dossier des intégrations Resolve.
 
-Après une mise à jour, redémarre Resolve avant d’ouvrir le plugin. Pour le retirer, ferme Resolve puis supprime le dossier `com.idolatry.resolveprojectcreationtool` dans `/Library/Application Support/Blackmagic Design/DaVinci Resolve/Workflow Integration Plugins`. Cette désinstallation ne supprime pas les projets ni les médias.
+Après une mise à jour, redémarre Resolve avant d’ouvrir le plugin. Pour le retirer, clique sur **Désinstaller** en bas de la première étape du plugin, puis redémarre Resolve. Cette désinstallation ne supprime pas les projets ni les médias.
 
 ## Utilisation pas à pas
 
@@ -112,3 +112,9 @@ Le générateur travaille sur les dossiers surveillés et leurs sous-dossiers; i
 - Historique des changements : [`CHANGELOG.md`](CHANGELOG.md)
 - Chaque nouvelle version du plugin reçoit un numéro `v0.xx`, inscrit dans le manifeste et le paquet, puis publié comme tag et release GitHub.
 - L’archive de release contient `WorkflowIntegration.node` signé par Blackmagic et `ffprobe` universel. Depuis le dépôt de développement, `build.command` peut encore reprendre le module Workflow Integration depuis l’installation locale de Resolve.
+
+## Publier une nouvelle version (développeur)
+
+1. Augmente la version dans `plugin/package.json` et `plugin/manifest.xml`, et ajoute une entrée dans `CHANGELOG.md`.
+2. Double-clique sur **Publier une version.command**. Au premier lancement, il installe GitHub CLI et ouvre ton navigateur pour te connecter à GitHub.
+3. Le `.pkg` apparaît dans les Releases du dépôt, prêt à partager.

@@ -1,5 +1,13 @@
 # Historique des versions
 
+## v0.18 — 25 octobre 2026
+
+- Nouvelle colonne **Profil couleur** à l’étape Sources : détectée automatiquement et modifiable plan par plan (S-Log3, Canon Log 2, Canon Log 3, ou aucun CST).
+- Lecture du gamma enregistré dans les XML Sony : un plan tourné en S-Log3 reçoit le CST, un plan en Rec.709, HLG ou S-Cinetone n’en reçoit pas.
+- Timelines supplémentaires au choix : une par caméra et/ou une par jour de tournage, avec le CST appliqué elles aussi.
+- Bouton **Désinstaller** dans le plugin (confirmation et mot de passe macOS). Il remplace `uninstall.command`.
+- `Publier une version.command` : fabrique le `.pkg`, envoie le code et crée la release GitHub avec le `.pkg` en téléchargement. `Envoyer sur GitHub.command` envoie seulement le code. Les deux se connectent à GitHub par le navigateur (compatible connexion Google).
+
 ## v0.17 — 25 octobre 2026
 
 - Applique automatiquement un node Color Space Transform sur chaque plan de la timeline d’assemblage, selon la caméra : Sony FX3, FX6, FX9, Burano (S-Gamut3.Cine / S-Log3), Canon C50, C70 (Cinema Gamut / Canon Log 2), Canon R5 (Cinema Gamut / Canon Log 3).

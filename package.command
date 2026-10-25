@@ -22,4 +22,4 @@ pkgbuild --root "$WORK/payload" --identifier "$PLUGIN_ID" --version "$VERSION" -
   --scripts "$WORK/scripts" "$WORK/plugin.pkg"
 productbuild --distribution "$WORK/distribution.xml" --resources "$WORK/resources" --package-path "$WORK" "$OUT"
 printf '\nInstalleur prêt : %s\n' "$OUT"
-open -R "$OUT"
+[ -z "${RPM_NO_REVEAL:-}" ] && open -R "$OUT"

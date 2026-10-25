@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('projectTool', {
   openProxyGenerator: (paths) => ipcRenderer.invoke('tool:open-proxy-generator', paths),
   finish: () => ipcRenderer.invoke('tool:finish'),
   close: () => ipcRenderer.invoke('tool:close'),
+  uninstall: () => ipcRenderer.invoke('tool:uninstall'),
   onProgress: (callback) => {
     const listener = (_event, payload) => callback(payload);
     ipcRenderer.on('tool:progress', listener);

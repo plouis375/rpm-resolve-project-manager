@@ -11,7 +11,7 @@ const {
   VIDEO, SEQUENCE, SUPPORTED, FRAME_RATES, cleanText, categoryFor, normalizeBrand, normalizeDate, localDate,
   sidecarCandidates, filterSidecars, parseSidecarXml, markDuplicates, dominantFormat, nearestFrameRate, matchImported
 } = require('./lib/media');
-const { OUTPUTS, profileForCamera, presetFileName } = require('./lib/cst');
+const { PROFILES, OUTPUTS, profileFromMetadata, presetFileName } = require('./lib/cst');
 
 const execFileAsync = promisify(execFile);
 const PLUGIN_ID = 'com.idolatry.resolveprojectcreationtool';
@@ -229,9 +229,10 @@ async function enrichFile(file, signal) {
   ]);
   throwIfAborted(signal);
   const metadata = { ...(probe || fallback || { verified: false }) };
-  if (VIDEO.has(file.extension) && (!metadata.cameraMake || !metadata.cameraModel || !metadata.date)) {
+  if (VIDEO.has(file.extension)) {
     const sidecar = await readSidecar(file.filePath);
     if (sidecar) {
+      metadata.captureGamma = sidecar.captureGamma || '';
       metadata.cameraMake ||= sidecar.cameraMake;
       metadata.cameraModel ||= sidecar.cameraModel;
       metadata.date ||= sidecar.date;
@@ -257,6 +258,8 @@ async function enrichFile(file, signal) {
     fps: metadata.format?.fps || null,
     cameraBrand: isVideo ? normalizeBrand(rawMake, rawModel) || '' : '',
     cameraModel: isVideo ? rawModel : '',
+    captureGamma: isVideo ? metadata.captureGamma || '' : '',
+    colorProfile: isVideo ? profileFromMetadata(normalizeBrand(rawMake, rawModel), rawModel, metadata.captureGamma) || '' : '',
     shootingDate: isVideo ? shootingDate : '',
     dateSource: isVideo ? (metadata.date ? 'metadata' : 'creation') : '',
     verified: metadata.verified,
@@ -588,7 +591,7 @@ async function applyTimelineSettings(project, rushes, options) {
 
 // Applique un node Color Space Transform (preset .drx) à chaque plan de la timeline.
 async function applyColorTransforms(project, timeline, importedRushes, output) {
-  const report = { applied: 0, unrecognized: [], failed: [] };
+  const report = { applied: 0, skipped: 0, unrecognized: [], failed: [] };
   const outputKey = OUTPUTS[output] ? output : 'rec709a';
   try { await project.SetCurrentTimeline(timeline); } catch (_) {}
   let items = [];
@@ -607,8 +610,9 @@ async function applyColorTransforms(project, timeline, importedRushes, output) {
   }
   const groups = new Map();
   for (const { item, file } of pairs) {
-    const profile = file ? profileForCamera(file.cameraBrand, file.cameraModel) : null;
-    if (!profile) { report.unrecognized.push(file?.name || 'Plan sans rush associé'); continue; }
+    const profile = file?.colorProfile || null;
+    if (profile === 'none') { report.skipped += 1; continue; }
+    if (!PROFILES[profile]) { report.unrecognized.push(file?.name || 'Plan sans rush associé'); continue; }
     if (!groups.has(profile)) groups.set(profile, []);
     groups.get(profile).push({ item, file });
   }
@@ -657,7 +661,8 @@ async function createProject(event, options) {
       include,
       cameraBrand: safeBinName(edit.cameraBrand, 'À identifier'),
       cameraModel: safeBinName(edit.cameraModel, 'À identifier'),
-      shootingDate: /^\d{4}-\d{2}-\d{2}$/.test(edit.shootingDate || '') ? edit.shootingDate : original.shootingDate || 'Date inconnue'
+      shootingDate: /^\d{4}-\d{2}-\d{2}$/.test(edit.shootingDate || '') ? edit.shootingDate : original.shootingDate || 'Date inconnue',
+      colorProfile: typeof edit.colorProfile === 'string' && (edit.colorProfile === 'none' || edit.colorProfile === '' || PROFILES[edit.colorProfile]) ? edit.colorProfile : original.colorProfile || ''
     };
   }).filter((file) => file.include);
   if (!selected.length) throw new Error('Aucun média à importer.');
@@ -788,6 +793,46 @@ async function createProject(event, options) {
       timelineWarning = 'Aucun rush vidéo retenu. La timeline d’assemblage n’a pas été créée.';
     }
 
+    // Timelines supplémentaires : une par caméra et/ou une par jour de tournage.
+    const extraTimelines = [];
+    if (options.createTimeline && importedRushes.length && (options.timelinePerCamera || options.timelinePerDay)) {
+      const groupings = [];
+      if (options.timelinePerCamera) groupings.push((file) => `${safeBinName(file.cameraBrand, 'À identifier')} ${safeBinName(file.cameraModel, '')}`.trim());
+      if (options.timelinePerDay) groupings.push((file) => /^\d{4}-\d{2}-\d{2}$/.test(file.shootingDate) ? file.shootingDate : 'Date inconnue');
+      const plans = [];
+      for (const keyOf of groupings) {
+        const byKey = new Map();
+        for (const entry of importedRushes) {
+          const key = keyOf(entry.file);
+          if (!byKey.has(key)) byKey.set(key, []);
+          byKey.get(key).push(entry);
+        }
+        if (byKey.size > 1) for (const [key, entries] of [...byKey].sort((a, b) => a[0].localeCompare(b[0], 'fr', { numeric: true }))) plans.push({ key, entries });
+      }
+      let extraFailed = 0;
+      for (let index = 0; index < plans.length; index += 1) {
+        const { key, entries } = plans[index];
+        sendProgress(event, { stage: 'grade', current: index, total: plans.length, label: `Timeline ${key}` });
+        try {
+          await mediaPool.SetCurrentFolder(bins.Séquences || root);
+          const extraName = `${name} — ${key}`;
+          const extra = await mediaPool.CreateTimelineFromClips(extraName, entries.map(({ item }) => item));
+          if (!extra) { extraFailed += 1; continue; }
+          extraTimelines.push(extraName);
+          if (options.applyCst) await applyColorTransforms(project, extra, entries, options.cstOutput);
+        } catch (_) { extraFailed += 1; }
+      }
+      if (extraFailed) timelineWarning = [timelineWarning, `${extraFailed} timeline(s) par caméra ou par jour n’ont pas été créées.`].filter(Boolean).join(' ');
+      // Revient sur l’assemblage principal.
+      try {
+        const count = await project.GetTimelineCount();
+        for (let i = 1; i <= count; i += 1) {
+          const candidate = await project.GetTimelineByIndex(i);
+          if (candidate && await candidate.GetName() === timelineName) { await project.SetCurrentTimeline(candidate); break; }
+        }
+      } catch (_) {}
+    }
+
     const saved = await projectManager.SaveProject();
     if (!saved) timelineWarning = [timelineWarning, 'Le projet a été créé, mais Resolve n’a pas confirmé son enregistrement.'].filter(Boolean).join(' ');
     scanSnapshots.delete(options.scanId);
@@ -800,6 +845,7 @@ async function createProject(event, options) {
       createdBins: folders.map((folder) => folder.name),
       timelineName,
       timelineFormat,
+      extraTimelines,
       colorReport,
       warning: [timelineWarning,
         colorReport?.unrecognized.length ? `${colorReport.unrecognized.length} plan(s) sans CST : caméra non reconnue.` : '',
@@ -871,6 +917,33 @@ function registerHandlers() {
     return true;
   });
   ipcMain.handle('tool:close', () => mainWindow?.close());
+  ipcMain.handle('tool:uninstall', async () => {
+    const choice = await dialog.showMessageBox(mainWindow, {
+      type: 'warning',
+      buttons: ['Désinstaller', 'Annuler'],
+      defaultId: 1,
+      cancelId: 1,
+      message: 'Désinstaller RPM - Resolve Project Manager ?',
+      detail: 'Le plugin sera retiré de Resolve. Tes projets, tes médias et tes proxies ne sont pas touchés. macOS va te demander ton mot de passe.'
+    });
+    if (choice.response !== 0) return { ok: false, cancelled: true };
+    const pluginDir = path.resolve(__dirname);
+    // Garde-fou : on ne supprime que le dossier du plugin, dans le dossier des intégrations Resolve.
+    if (path.basename(pluginDir) !== PLUGIN_ID || !pluginDir.includes('/Workflow Integration Plugins/')) {
+      throw new Error('Emplacement du plugin inattendu : désinstallation annulée.');
+    }
+    const shell = `rm -rf '${pluginDir.replace(/'/g, "'\\''")}'`;
+    const script = `do shell script ${JSON.stringify(shell)} with administrator privileges`;
+    try {
+      await execFileAsync('/usr/bin/osascript', ['-e', script]);
+    } catch (error) {
+      if (/-128|annul|cancel/i.test(String(error.stderr || error.message))) return { ok: false, cancelled: true };
+      throw new Error('La désinstallation a échoué. Réessaie, ou supprime le dossier du plugin à la main.');
+    }
+    await dialog.showMessageBox(mainWindow, { type: 'info', buttons: ['OK'], message: 'Plugin désinstallé', detail: 'Redémarre DaVinci Resolve pour qu’il disparaisse du menu Workflow Integrations.' });
+    setTimeout(() => mainWindow?.close(), 100);
+    return { ok: true };
+  });
 }
 
 function createWindow() {

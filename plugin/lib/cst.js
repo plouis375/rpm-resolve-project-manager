@@ -22,9 +22,21 @@ function profileForCamera(brand = '', model = '') {
   return CAMERAS.find(([pattern]) => pattern.test(input))?.[1] || null;
 }
 
+// Profil à partir de la caméra et, si le fichier l’indique (Sony), du gamma enregistré.
+// Retourne un profil, 'none' (gamma non log : pas de CST) ou null (inconnu).
+function profileFromMetadata(brand = '', model = '', captureGamma = '') {
+  const gamma = String(captureGamma || '').toLowerCase();
+  if (gamma) {
+    if (/s-?log3/.test(gamma)) return 'sony-slog3';
+    if (/log/.test(gamma)) return null; // autre log (S-Log2…) : pas de preset, à choisir à la main
+    return 'none'; // Rec.709, HLG, S-Cinetone… : déjà en vidéo
+  }
+  return profileForCamera(brand, model);
+}
+
 function presetFileName(profile, output) {
   if (!PROFILES[profile] || !OUTPUTS[output]) return null;
   return `${profile}_${output}.drx`;
 }
 
-module.exports = { PROFILES, OUTPUTS, profileForCamera, presetFileName };
+module.exports = { PROFILES, OUTPUTS, profileForCamera, profileFromMetadata, presetFileName };
