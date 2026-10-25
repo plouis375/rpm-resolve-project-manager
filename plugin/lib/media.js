@@ -58,7 +58,7 @@ function normalizeDate(value) {
     const date = new Date(input.replace(' ', 'T').replace(/([+-]\d{2})(\d{2})$/, '$1:$2'));
     if (!Number.isNaN(date.getTime())) return localDate(date);
   }
-  const match = input.match(/(\d{4})-?(\d{2})-?(\d{2})/);
+  const match = input.match(/(?<!\d)(\d{4})-?(\d{2})-?(\d{2})(?!\d)/);
   if (match) return `${match[1]}-${match[2]}-${match[3]}`;
   const date = new Date(input);
   return Number.isNaN(date.getTime()) ? '' : localDate(date);
