@@ -1,44 +1,49 @@
-# RPM - Resolve Project Manager — v0.18
+# RPM - Resolve Project Manager
 
-Assistant macOS intégré à **DaVinci Resolve Studio** pour créer un projet, trier les médias dans le Media Pool et préparer le montage. Il s’ouvre depuis le menu de Resolve, guide la préparation, puis se ferme quand le projet est prêt.
+Assistant macOS pour **DaVinci Resolve Studio** : il crée un projet, classe les médias dans le Media Pool et prépare la timeline de montage. Il s’ouvre depuis le menu de Resolve et se ferme quand le projet est prêt.
 
-Depuis la v0.14, son interface adopte une direction graphique brutaliste : papier clair, grands titres noirs et accent corail. La v0.15 permet de choisir la résolution et la fréquence d’images de la timeline d’assemblage. La v0.17 applique automatiquement un Color Space Transform adapté à la caméra sur chaque plan de cette timeline.
+[Télécharger la dernière version](https://github.com/plouis375/rpm-resolve-project-manager/releases/latest) · [Historique des versions](CHANGELOG.md)
 
-[Télécharger la dernière version](https://github.com/plouis375/rpm-resolve-project-manager/releases/latest) · [Voir les versions et leurs changements](https://github.com/plouis375/rpm-resolve-project-manager/releases)
+## Ce qu’il fait
+
+- Analyse des dossiers sources : médias reconnus, durée, taille, doublons probables.
+- Classement automatique des rushs par marque de caméra, modèle et date de tournage.
+- Création du projet, des chutiers et import des médias retenus, avec un rapport final.
+- Timeline d’assemblage facultative, avec résolution et fréquence réglables.
+- Color Space Transform automatique sur chaque plan selon la caméra (voir plus bas).
+- Préparation des proxies avec Blackmagic Proxy Generator.
 
 ## Prérequis
 
-- macOS et DaVinci Resolve Studio installés.
+- macOS et DaVinci Resolve Studio.
 - Une bibliothèque de projets Resolve accessible.
-- Les médias source accessibles depuis ce Mac, sur disque local ou volume monté.
-- `ffprobe` est inclus dans l’archive, en version universelle Intel et Apple Silicon; aucune installation supplémentaire n’est nécessaire. Si cet outil ne peut pas être lancé, l’application essaie aussi une analyse partielle avec Spotlight.
+- Les médias source accessibles depuis ce Mac (disque local ou volume monté).
+- `ffprobe` est inclus dans l’archive, universel Intel et Apple Silicon. Si `ffprobe` ne peut pas tourner, le plugin tente une analyse partielle avec Spotlight.
 
-Le plugin a été vérifié avec DaVinci Resolve Studio 21.1.1 sur macOS. Le fonctionnement peut varier avec d’autres versions de Resolve.
+Testé avec DaVinci Resolve Studio 21.1.1 sur macOS. Les autres versions de Resolve peuvent se comporter différemment.
 
 ## Installation
 
-### Installeur graphique
-
-1. Télécharge `RPM-Resolve-Project-Manager-v0.18.0.pkg` depuis la [dernière version](https://github.com/plouis375/rpm-resolve-project-manager/releases/latest).
-2. Ferme DaVinci Resolve, puis ouvre le `.pkg` par double-clic et suis les étapes de l’installeur macOS. Il demande un mot de passe administrateur pour copier le plugin dans le dossier partagé de Resolve.
-3. Si macOS bloque le paquet parce qu’il n’est pas signé, ouvre **Réglages Système → Confidentialité et sécurité**, puis choisis **Ouvrir quand même** pour ce paquet. Ce paquet n’est pas signé ni notarié faute de compte développeur Apple.
+1. Télécharge le fichier `.pkg` depuis la [dernière version](https://github.com/plouis375/rpm-resolve-project-manager/releases/latest).
+2. Ferme DaVinci Resolve, puis ouvre le `.pkg` par double-clic. L’installeur demande ton mot de passe administrateur pour copier le plugin dans le dossier partagé de Resolve.
+3. Si macOS bloque le paquet (il n’est pas signé ni notarié, faute de compte développeur Apple), ouvre **Réglages Système → Confidentialité et sécurité** et choisis **Ouvrir quand même**.
 4. Rouvre Resolve et choisis **Workspace → Workflow Integrations → RPM - Resolve Project Manager**.
 
-Une sauvegarde horodatée de la version précédente est conservée dans `.backups`, à l’intérieur du dossier des intégrations Resolve.
+Après une mise à jour, redémarre Resolve avant d’ouvrir le plugin. Une sauvegarde horodatée de la version précédente est conservée dans `.backups`, dans le dossier des intégrations Resolve.
 
-Après une mise à jour, redémarre Resolve avant d’ouvrir le plugin. Pour le retirer, clique sur **Désinstaller** en bas de la première étape du plugin, puis redémarre Resolve. Cette désinstallation ne supprime pas les projets ni les médias.
+**Désinstaller** : clique sur le bouton en bas de la première étape du plugin, puis redémarre Resolve. Les projets et les médias ne sont pas supprimés.
 
-## Utilisation pas à pas
+## Utilisation
 
-1. **Projet** — Saisis le nom du projet dans le champ vide « Nom du projet ». Il sera créé dans la bibliothèque et le dossier actuellement sélectionnés dans Resolve.
-2. **Sources** — Ajoute un ou plusieurs dossiers. L’analyse parcourt leurs sous-dossiers et présente les médias reconnus, leur taille, leur durée et leur destination dans Resolve. Tu peux chercher un fichier, changer sa catégorie ou l’exclure. Ajouter un dossier analyse uniquement ses nouveaux médias; retirer un dossier met à jour la sélection sans refaire l’analyse des autres. Le bouton **Actualiser** relit tous les dossiers sélectionnés pour repérer les nouveaux médias et les fichiers retirés. Les corrections manuelles et les choix d’inclusion sont conservés; les doublons probables sont recalculés.
-3. **Organisation** — Renomme, ajoute ou retire les chutiers du Media Pool pour ce projet. Un chutier contenant des médias ne peut être retiré qu’après avoir reclassé ses fichiers à l’étape Sources. Tu peux enregistrer explicitement la structure comme préférence locale pour les prochains projets ou revenir au modèle de base. L’aperçu montre l’arborescence qui sera créée, y compris les dossiers caméra. Des noms de caméra proches peuvent être regroupés après confirmation. Choisis aussi si tu veux créer une timeline d’assemblage et, si oui, règle sa résolution et sa fréquence indépendamment ou laisse l’un des réglages en automatique. Avec la timeline, tu peux activer **Appliquer un Color Space Transform** : chaque plan reçoit un node CST selon sa caméra (Sony FX3, FX6, FX9, Burano en S-Log3 ; Canon C50, C70 en Canon Log 2 ; Canon R5 en Canon Log 3), avec une sortie Rec.709-A ou Gamma 2.4. Les plans d’autres caméras restent sans étalonnage et sont signalés. Aucun réglage de rendu n’est appliqué au chutier Exports.
-4. **Création** — L’outil enregistre le projet déjà ouvert s’il y en a un, crée le nouveau projet, ajoute les chutiers et importe les éléments retenus. Un rapport indique les imports réussis et ceux à vérifier.
-5. **Montage** — Le bouton de fin ouvre la page Edit et ferme l’assistant.
+1. **Projet** : saisis le nom du projet. Il est créé dans la bibliothèque et le dossier sélectionnés dans Resolve.
+2. **Sources** : ajoute un ou plusieurs dossiers. L’analyse parcourt les sous-dossiers. Tu peux chercher un fichier, changer sa catégorie ou l’exclure. **Actualiser** relit les dossiers pour repérer les nouveaux médias et les fichiers retirés. Tes corrections manuelles sont conservées.
+3. **Organisation** : renomme, ajoute ou retire les chutiers, choisis la timeline d’assemblage et ses réglages. Un aperçu montre l’arborescence qui sera créée. Tu peux enregistrer ta structure comme préférence pour les prochains projets.
+4. **Création** : le plugin crée le projet, les chutiers et importe les médias retenus. Un rapport indique les imports réussis et ceux à vérifier.
+5. **Montage** : le bouton final ouvre la page Edit et ferme l’assistant.
 
 ## Organisation créée dans Resolve
 
-Le modèle de base crée ces chutiers dans le Media Pool :
+Modèle de base, dans le Media Pool :
 
 ```text
 Nom du projet
@@ -53,68 +58,82 @@ Nom du projet
 └── Exports
 ```
 
-Les rushs sont classés par marque, modèle et date. Les autres types de média sont rangés directement dans leur chutier. Cette structure de départ peut être renommée, complétée ou réduite avant la création; les destinations ajoutées sont disponibles à l’étape Sources. Ces choix s’appliquent au projet en cours. Pour les réutiliser par défaut, clique sur **Enregistrer comme structure préférée**. La préférence reste sur ce Mac; **Revenir au modèle de base** la supprime et restaure les six chutiers initiaux. Cette structure est créée **dans Resolve** : l’outil ne crée pas de dossiers Finder et ne déplace ni ne copie les sources.
+Les autres types de médias sont rangés directement dans leur chutier. La structure peut être modifiée avant la création. **Enregistrer comme structure préférée** la garde sur ce Mac ; **Revenir au modèle de base** la supprime.
 
-## Classement et import des médias
+Le plugin travaille **dans Resolve uniquement** : il ne crée pas de dossiers Finder et ne déplace ni ne copie les sources.
 
-- **Rushs vidéo** — MOV, MP4, M4V, MXF, AVI, MPG/MPEG, MKV, MTS/M2TS, BRAW, R3D, ARI, CRM, 3GP et WEBM.
-- **Musiques et audio** — WAV, AIF/AIFF, MP3, M4A, AAC, FLAC, OGG, OPUS et WMA.
-- **Éléments image** — PNG, JPG/JPEG, TIF/TIFF, BMP, WEBP, HEIC/HEIF, EXR, DPX, DNG, ARW, CR2/CR3, NEF et RAF.
-- **Assets graphiques** — PSD, AI, EPS, SVG et PDF.
-- **Séquences** — FCPXML, EDL, AAF, DRT, OTIO et XML autonomes.
+## Formats reconnus
 
-Les sous-dossiers `Proxy` créés par Blackmagic Proxy Generator sont ignorés pendant le scan; les fichiers originaux restent détectés dans leur emplacement source.
+- **Rushs vidéo** : MOV, MP4, M4V, MXF, AVI, MPG/MPEG, MKV, MTS/M2TS, BRAW, R3D, ARI, CRM, 3GP, WEBM.
+- **Audio** : WAV, AIF/AIFF, MP3, M4A, AAC, FLAC, OGG, OPUS, WMA.
+- **Images** : PNG, JPG/JPEG, TIF/TIFF, BMP, WEBP, HEIC/HEIF, EXR, DPX, DNG, ARW, CR2/CR3, NEF, RAF.
+- **Assets graphiques** : PSD, AI, EPS, SVG, PDF.
+- **Séquences** : FCPXML, EDL, AAF, DRT, OTIO, XML autonomes.
 
-Les fichiers cachés sont ignorés. Quand un fichier vidéo possède un sidecar XML (Canon : `CLIP.XML`, Sony : `C0001M01.XML`), ce XML est traité comme une fiche de métadonnées : sa marque et son modèle peuvent servir au classement, et il n’apparaît pas comme séquence à importer. Les XML sans vidéo associée restent considérés comme des séquences.
+Les fichiers cachés et les sous-dossiers `Proxy` sont ignorés. Un XML sidecar Canon (`CLIP.XML`) ou Sony (`C0001M01.XML`) associé à une vidéo sert de fiche de métadonnées : il n’apparaît pas comme séquence.
 
-L’analyse utilise d’abord le `ffprobe` inclus dans l’archive pour lire les durées, les formats et les métadonnées de plusieurs conteneurs courants. Les champs de caméra non détectés restent modifiables avant la création. Pour la date, l’outil utilise les métadonnées disponibles, puis la date de création du fichier comme repli. Une date de repli est signalée. Le binaire est une compilation FFmpeg LGPL sans modules GPL; les mentions, la licence et le lien vers le code source correspondant se trouvent dans `plugin/FFmpeg-NOTICE.md`.
+Pour la date de tournage, le plugin lit les métadonnées, puis utilise la date de création du fichier en repli (signalée dans l’analyse). Les caméras non reconnues restent modifiables avant la création.
 
-## Harmoniser les noms de caméra
+## Doublons et alertes
 
-Avant la création, l’étape Organisation peut suggérer de regrouper des marques ou des modèles dont l’écriture est proche. Chaque proposition indique le nom le plus fréquent comme destination; aucun nom ne change tant que tu ne cliques pas sur **Regrouper**. Les valeurs corrigées sont alors utilisées dans l’arborescence et les chutiers caméra.
+- Les doublons probables sont repérés par **nom, taille et durée**. Les doublons ultérieurs sont exclus par défaut et peuvent être réinclus.
+- **Comparer le contenu des doublons probables** calcule une empreinte SHA-256 sur les seuls groupes suspects, pour confirmer ou écarter les doublons. La lecture complète peut être longue sur de gros fichiers.
+- L’écran Sources regroupe les alertes (fichiers vides, analyse indisponible, caméra à identifier, date de repli, doublons) et permet de filtrer.
+- Les alertes n’empêchent pas la création. Les fichiers originaux ne sont ni modifiés ni supprimés.
 
-## Doublons et vérifications
+## Harmonisation des noms de caméra
 
-Les doublons probables sont d’abord repérés rapidement avec le **nom, la taille et la durée**. Les correspondances ultérieures sont exclues par défaut; tu peux les réinclure dans la liste. Pour confirmer les alertes, clique sur **Comparer le contenu des doublons probables** : l’outil calcule une empreinte SHA-256 sur les fichiers des groupes suspects. Les fichiers dont le contenu diffère sont retirés des doublons et réintégrés s’ils avaient été exclus automatiquement. Si un fichier est illisible pendant la comparaison, le groupe reste marqué comme probable et non confirmé. Cette lecture complète peut prendre du temps pour de gros fichiers; elle ne porte que sur les groupes suspects.
-
-L’écran **Sources** regroupe les alertes par type et permet de filtrer la liste : fichiers vides, analyse technique indisponible, caméra à identifier, date de création utilisée et doublons probables. Le scan et la comparaison SHA-256 peuvent être interrompus sans perdre les dossiers sélectionnés ni les résultats précédemment confirmés. Une analyse technique indisponible ne prouve pas que Resolve ne peut pas lire le média. Les alertes n’empêchent pas la création : tu peux garder ou exclure chaque fichier. Les fichiers originaux ne sont ni modifiés ni supprimés.
+L’étape Organisation peut proposer de regrouper des marques ou modèles aux noms proches. Rien ne change tant que tu ne cliques pas sur **Regrouper**.
 
 ## Timeline d’assemblage (facultative)
 
-Si l’option est cochée, Resolve crée `Nom du projet — Assemblage` dans le chutier Séquences avec les rushs retenus, bout à bout. Si ce chutier a été retiré, la timeline est créée à la racine du projet. Choisis la résolution (HD, Full HD, 2K/4K DCI, Ultra HD, vertical ou carré) et la fréquence (23,976 à 60 i/s) indépendamment. « Automatique » reprend le format vidéo le plus représenté pour le réglage concerné. En l’absence de format dominant, le repli automatique est 1920 × 1080 (16:9) à 24 i/s.
+Si l’option est cochée, Resolve crée `Nom du projet — Assemblage` dans le chutier Séquences, avec les rushs retenus bout à bout (à la racine si ce chutier a été retiré).
 
-Cette option prépare une timeline de départ; elle ne crée pas de montage éditorial, ne coupe pas les plans et ne choisit pas de prises.
+- **Résolution** : HD, Full HD, 2K/4K DCI, Ultra HD, vertical ou carré.
+- **Fréquence** : de 23,976 à 60 i/s.
+- **Automatique** : reprend le format majoritaire des rushs. Sans format dominant, repli sur 1920 × 1080 à 24 i/s.
+
+Cette timeline est un point de départ : elle ne coupe pas les plans et ne choisit pas de prises.
+
+### Color Space Transform
+
+Avec l’option **Appliquer un Color Space Transform**, chaque plan reçoit un node CST selon sa caméra :
+
+- Sony FX3, FX6, FX9, Burano (S-Gamut3.Cine / S-Log3)
+- Canon C50, C70 (Cinema Gamut / Canon Log 2)
+- Canon R5 (Cinema Gamut / Canon Log 3)
+
+Sortie au choix : Rec.709-A (visionnage sur Mac) ou Rec.709 Gamma 2.4 (diffusion). Les plans d’autres caméras restent sans étalonnage et sont signalés dans le rapport. Le chutier Exports n’est pas modifié.
 
 ## Proxies avec Blackmagic Proxy Generator
 
-À l’étape **Organisation**, coche « Préparer la génération de proxies » pour afficher le guide à la fin de la création. Depuis cet écran, le bouton ajoute automatiquement les dossiers sources à la liste des dossiers surveillés, puis ouvre Blackmagic Proxy Generator. Les chemins déjà enregistrés sont conservés; les doublons ne sont pas ajoutés. Vérifie le format et la résolution dans l’application. Si le générateur est déjà ouvert, ferme-le avant de cliquer : l’outil ne modifie pas sa liste pendant qu’il tourne.
+Coche « Préparer la génération de proxies » à l’étape Organisation. Le guide de fin ajoute les dossiers sources à la liste surveillée de Blackmagic Proxy Generator, puis ouvre l’application. Ferme-la avant de cliquer si elle est déjà ouverte.
 
-Le générateur travaille sur les dossiers surveillés et leurs sous-dossiers; il peut donc traiter des fichiers qui ont été exclus de la liste d’import du plugin. Les proxies sont écrits dans des sous-dossiers `proxy` à côté des médias. Resolve associe automatiquement les proxies reconnus à leurs originaux. L’outil ne change pas le format, la résolution ni le réglage de démarrage du générateur. Selon ce dernier réglage, le traitement peut démarrer automatiquement à l’ouverture. Les dossiers enregistrés restent surveillés jusqu’à ce que tu les retires dans l’application. L’outil met à jour le fichier de préférences local de Blackmagic Proxy Generator; Blackmagic ne documente pas d’API publique pour cette opération, donc une évolution de son format de préférences pourrait nécessiter une mise à jour du plugin.
+Les proxies sont écrits dans des sous-dossiers `proxy` à côté des médias, et Resolve les associe à leurs originaux. Le plugin modifie le fichier de préférences de Blackmagic Proxy Generator ; Blackmagic ne documente pas d’API pour cela, donc un changement de format pourrait demander une mise à jour du plugin.
 
-## Fonctions hors périmètre
+## Hors périmètre
 
-- **Archivage** — Aucun archivage de projet n’est proposé; cette fonction n’est pas prévue dans le périmètre actuel.
-- **Dossiers Finder et sauvegarde des médias** — Le plugin organise les chutiers Resolve et conserve les médias à leur emplacement. Il ne crée pas une arborescence disque et ne réalise pas de copie de sauvegarde.
-- **Espace disque des proxies** — L’outil n’estime pas l’espace requis; consulte l’indication dans Blackmagic Proxy Generator.
-- **Exports** — Le chutier Exports est créé, mais les presets, noms et réglages de rendu restent à configurer dans Resolve.
+- Archivage de projet.
+- Création de dossiers Finder ou sauvegarde des médias.
+- Estimation de l’espace disque des proxies (voir Blackmagic Proxy Generator).
+- Presets et réglages de rendu des exports.
 
 ## Dépannage
 
-- **Le plugin n’apparaît pas dans Workspace** — Vérifie qu’il a été installé avec DaVinci Resolve Studio, puis redémarre Resolve.
-- **Resolve refuse la connexion** — Ferme puis rouvre Resolve. Si le problème persiste, relance le `.pkg` de la dernière version.
-- **La caméra est « À identifier »** — Vérifie l’alerte d’analyse, puis corrige la marque et le modèle dans la liste avant de créer le projet. Les XML Canon associés sont lus automatiquement.
-- **Un fichier n’est pas importé** — Consulte le rapport final et vérifie que son volume source est toujours monté et que le format est pris en charge par ta version de Resolve.
+- **Le plugin n’apparaît pas dans Workspace** : vérifie l’installation, puis redémarre Resolve.
+- **Resolve refuse la connexion** : ferme et rouvre Resolve. Si ça persiste, réinstalle la dernière version.
+- **Caméra « À identifier »** : corrige la marque et le modèle dans la liste avant de créer le projet. Les XML Canon sont lus automatiquement.
+- **Un fichier n’est pas importé** : consulte le rapport final, vérifie que son volume est monté et que le format est pris en charge par ta version de Resolve.
 
-## Développement et versions
+## Développement
 
-- Code source du plugin : [`plugin/`](plugin/) — la logique de classement pure est dans [`plugin/lib/media.js`](plugin/lib/media.js).
-- Tests : `npm test` (Node 20+, sans Resolve). Les rushs d’exemple de `rush test/` restent locaux et ne sont pas versionnés.
-- Historique des changements : [`CHANGELOG.md`](CHANGELOG.md)
-- Chaque nouvelle version du plugin reçoit un numéro `v0.xx`, inscrit dans le manifeste et le paquet, puis publié comme tag et release GitHub.
-- L’archive de release contient `WorkflowIntegration.node` signé par Blackmagic et `ffprobe` universel. Depuis le dépôt de développement, `build.command` peut encore reprendre le module Workflow Integration depuis l’installation locale de Resolve.
+- Code du plugin : [`plugin/`](plugin/). La logique de classement est dans [`plugin/lib/media.js`](plugin/lib/media.js).
+- Tests : `npm test` (Node 20+, sans Resolve). Les rushs de `rush test/` restent locaux et ne sont pas versionnés.
+- Le paquet est fabriqué par `package.command` (réservé au développeur) : il produit `dist/RPM-Resolve-Project-Manager-vX.Y.Z.pkg`.
 
-## Publier une nouvelle version (développeur)
+### Publier une version
 
-1. Augmente la version dans `plugin/package.json` et `plugin/manifest.xml`, et ajoute une entrée dans `CHANGELOG.md`.
-2. Double-clique sur **Publier une version.command**. Au premier lancement, il installe GitHub CLI et ouvre ton navigateur pour te connecter à GitHub.
-3. Le `.pkg` apparaît dans les Releases du dépôt, prêt à partager.
+1. Mets à jour la version dans `plugin/package.json` et `plugin/manifest.xml`, puis ajoute une entrée dans `CHANGELOG.md`.
+2. Committe les changements.
+3. Lance `bash package.command` pour fabriquer le `.pkg`.
+4. Crée le tag et la release GitHub avec le `.pkg` en pièce jointe.
