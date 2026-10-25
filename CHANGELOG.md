@@ -6,7 +6,7 @@
 - Lecture du gamma enregistré dans les XML Sony : un plan tourné en S-Log3 reçoit le CST, un plan en Rec.709, HLG ou S-Cinetone n’en reçoit pas.
 - Timelines supplémentaires au choix : une par caméra et/ou une par jour de tournage, avec le CST appliqué elles aussi.
 - Bouton **Désinstaller** dans le plugin (confirmation et mot de passe macOS). Il remplace `uninstall.command`.
-- `Publier une version.command` : fabrique le `.pkg`, envoie le code et crée la release GitHub avec le `.pkg` en téléchargement. `Envoyer sur GitHub.command` envoie seulement le code. Les deux se connectent à GitHub par le navigateur (compatible connexion Google).
+- Publication : `package.command` fabrique le `.pkg` dans `dist/`, puis la release GitHub est créée avec ce fichier en téléchargement.
 
 ## v0.17 — 25 octobre 2026
 
