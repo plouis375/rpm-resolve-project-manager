@@ -1,5 +1,9 @@
 # Historique des versions
 
+## v0.18.4
+
+- L’option « Appliquer un Color Space Transform » prévient que l’étape peut être longue avec beaucoup de rushs.
+
 ## v0.18.3
 
 - Correctif : après installation, le plugin n’apparaissait plus dans Resolve. Le paquet contenait des fichiers lisibles seulement par le compte qui l’a fabriqué ; le build force désormais des permissions lisibles par tous.

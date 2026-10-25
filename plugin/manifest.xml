@@ -3,7 +3,7 @@
   <Plugin>
     <Id>com.idolatry.resolveprojectcreationtool</Id>
     <Name>RPM - Resolve Project Manager</Name>
-    <Version>0.18.3</Version>
+    <Version>0.18.4</Version>
     <Description>Créer un projet Resolve et classer ses médias.</Description>
     <FilePath>main.js</FilePath>
   </Plugin>
