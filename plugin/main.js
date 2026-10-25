@@ -738,6 +738,8 @@ async function createProject(event, options) {
 
     const importedRushes = [];
     const failures = [];
+    // Lots pour lesquels Resolve ne dit ni quels clips sont importés ni où : on ne peut pas trancher.
+    const unverified = [];
     const groups = [...groupMap.values()];
     const totalBatches = groups.reduce((total, group) => total + Math.ceil(group.files.length / 25), 0) + sequenceFiles.length;
     let completedBatches = 0;
@@ -753,10 +755,18 @@ async function createProject(event, options) {
           try { return await item.GetClipProperty('File Path'); } catch (_) { return ''; }
         }));
         // Repli : si Resolve ne donne aucun chemin mais autant de clips que demandé, l'ordre fait foi.
+        // Sans chemin et avec un nombre différent, rien ne permet d'associer : les fichiers restent à vérifier.
         const pathsKnown = importedPaths.some(Boolean);
-        const { matched, failed } = pathsKnown || items.length !== batch.length
-          ? matchImported(batch, importedPaths)
-          : { matched: batch.map((file, index) => ({ file, index })), failed: [] };
+        let matched;
+        let failed = [];
+        if (pathsKnown) {
+          ({ matched, failed } = matchImported(batch, importedPaths));
+        } else if (items.length === batch.length) {
+          matched = batch.map((file, index) => ({ file, index }));
+        } else {
+          matched = [];
+          unverified.push(...batch.map((file) => file.name));
+        }
         failures.push(...failed.map((file) => file.name));
         for (const { file, index } of matched) {
           if (file.category === 'Rushs') importedRushes.push({ file, item: items[index] });
@@ -827,6 +837,7 @@ async function createProject(event, options) {
         if (byKey.size > 1) for (const [key, entries] of [...byKey].sort((a, b) => a[0].localeCompare(b[0], 'fr', { numeric: true }))) plans.push({ key, entries });
       }
       let extraFailed = 0;
+      let extraCstFailed = 0;
       for (let index = 0; index < plans.length; index += 1) {
         const { key, entries } = plans[index];
         sendProgress(event, { stage: 'grade', current: index, total: plans.length, label: `Timeline ${key}` });
@@ -836,10 +847,14 @@ async function createProject(event, options) {
           const extra = await mediaPool.CreateTimelineFromClips(extraName, entries.map(({ item }) => item));
           if (!extra) { extraFailed += 1; continue; }
           extraTimelines.push(extraName);
-          if (options.applyCst) await applyColorTransforms(project, extra, entries, options.cstOutput);
+          if (options.applyCst) {
+            const extraColor = await applyColorTransforms(project, extra, entries, options.cstOutput);
+            extraCstFailed += extraColor.failed.length;
+          }
         } catch (_) { extraFailed += 1; }
       }
       if (extraFailed) timelineWarning = [timelineWarning, `${extraFailed} timeline(s) par caméra ou par jour n’ont pas été créées.`].filter(Boolean).join(' ');
+      if (extraCstFailed) timelineWarning = [timelineWarning, `Resolve n’a pas appliqué le CST sur ${extraCstFailed} plan(s) des timelines par caméra ou par jour.`].filter(Boolean).join(' ');
       // Revient sur l’assemblage principal.
       try {
         const count = await project.GetTimelineCount();
@@ -866,7 +881,7 @@ async function createProject(event, options) {
       colorReport,
       warning: [timelineWarning,
         colorReport?.unrecognized.length ? `${colorReport.unrecognized.length} plan(s) sans CST : caméra non reconnue.` : '',
-        colorReport?.failed.length ? `Resolve n’a pas appliqué le CST sur ${colorReport.failed.length} plan(s).` : '', failures.length ? `${failures.length} média(s) n’ont pas été importés.` : '', sequenceFailures.length ? `${sequenceFailures.length} séquence(s) n’ont pas été importées.` : ''].filter(Boolean).join(' '),
+        colorReport?.failed.length ? `Resolve n’a pas appliqué le CST sur ${colorReport.failed.length} plan(s).` : '', failures.length ? `${failures.length} média(s) n’ont pas été importés.` : '', unverified.length ? `${unverified.length} média(s) à vérifier : Resolve n’a pas confirmé leur import (${unverified.slice(0, 6).join(', ')}${unverified.length > 6 ? '…' : ''}).` : '', sequenceFailures.length ? `${sequenceFailures.length} séquence(s) n’ont pas été importées.` : ''].filter(Boolean).join(' '),
       savedProject
     };
   } catch (error) {
