@@ -589,6 +589,20 @@ async function applyTimelineSettings(project, rushes, options) {
   };
 }
 
+const CST_CALL_TIMEOUT_MS = 20000;
+
+// Un appel Resolve bloqué ne doit pas bloquer la création : on rend la main après le délai.
+function withTimeout(promise, ms) {
+  let timer;
+  const timeout = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Délai dépassé')), ms); });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+// Enregistre l’état courant : si Resolve se bloque plus tard, le projet garde imports et timeline.
+async function checkpoint() {
+  try { await projectManager.SaveProject(); } catch (_) {}
+}
+
 // Applique un node Color Space Transform (preset .drx) à chaque plan de la timeline.
 async function applyColorTransforms(project, timeline, importedRushes, output) {
   const report = { applied: 0, skipped: 0, unrecognized: [], failed: [] };
@@ -626,15 +640,15 @@ async function applyColorTransforms(project, timeline, importedRushes, output) {
     for (const entry of entries) {
       let ok = false;
       try {
-        const graph = await entry.item.GetNodeGraph();
-        if (graph) ok = Boolean(await graph.ApplyGradeFromDRX(presetPath, 0));
+        const graph = await withTimeout(entry.item.GetNodeGraph(), CST_CALL_TIMEOUT_MS);
+        if (graph) ok = Boolean(await withTimeout(graph.ApplyGradeFromDRX(presetPath, 0), CST_CALL_TIMEOUT_MS));
       } catch (_) {}
       if (ok) report.applied += 1; else pending.push(entry);
     }
     // Repli pour les versions de Resolve sans graph.ApplyGradeFromDRX.
     if (pending.length) {
       let ok = false;
-      try { ok = Boolean(await timeline.ApplyGradeFromDRX(presetPath, 0, pending.map(({ item }) => item))); } catch (_) {}
+      try { ok = Boolean(await withTimeout(timeline.ApplyGradeFromDRX(presetPath, 0, pending.map(({ item }) => item)), CST_CALL_TIMEOUT_MS * pending.length)); } catch (_) {}
       if (ok) report.applied += pending.length;
       else report.failed.push(...pending.map(({ file }) => file.name));
     }
@@ -752,6 +766,8 @@ async function createProject(event, options) {
       }
     }
 
+    await checkpoint();
+
     const sequenceFailures = [];
     if (sequenceFiles.length) {
       for (const file of sequenceFiles) {
@@ -782,6 +798,7 @@ async function createProject(event, options) {
         timelineWarning = 'Resolve n’a pas créé la timeline. Le projet et les médias sont conservés.';
       } else {
         timelineFormat = timelineSettings.label;
+        await checkpoint();
         if (options.applyCst) {
           sendProgress(event, { stage: 'grade', current: 0, total: 1, label: 'Application des Color Space Transform' });
           colorReport = await applyColorTransforms(project, timeline, importedRushes, options.cstOutput);
