@@ -1,4 +1,4 @@
-# Resolve Project Creation Tool — v0.15
+# Resolve Project Creation Tool — v0.16
 
 Assistant macOS intégré à **DaVinci Resolve Studio** pour créer un projet, trier les médias dans le Media Pool et préparer le montage. Il s’ouvre depuis le menu de Resolve, guide la préparation, puis se ferme quand le projet est prêt.
 
@@ -19,14 +19,14 @@ Le plugin a été vérifié avec DaVinci Resolve Studio 21.1.1 sur macOS. Le fon
 
 ### Installeur graphique
 
-1. Télécharge `Resolve-Project-Creation-Tool-v0.15.pkg` depuis la [dernière version](https://github.com/plouis375/resolve-project-creation-tool/releases/latest).
+1. Télécharge `Resolve-Project-Creation-Tool-v0.16.pkg` depuis la [dernière version](https://github.com/plouis375/resolve-project-creation-tool/releases/latest).
 2. Ferme DaVinci Resolve, puis ouvre le `.pkg` par double-clic et suis les étapes de l’installeur macOS. Il demande un mot de passe administrateur pour copier le plugin dans le dossier partagé de Resolve.
 3. Si macOS bloque le paquet parce qu’il n’est pas signé, ouvre **Réglages Système → Confidentialité et sécurité**, puis choisis **Ouvrir quand même** pour ce paquet. Ce paquet n’est pas signé ni notarié faute de compte développeur Apple.
 4. Rouvre Resolve et choisis **Workspace → Workflow Integrations → Resolve Project Creation Tool**.
 
 ### Installation depuis l’archive ZIP
 
-Si tu préfères ne pas utiliser le paquet macOS, télécharge `Resolve-Project-Creation-Tool-v0.15.zip`, décompresse-le, ferme Resolve et ouvre `install.command` par double-clic. Confirme l’ouverture si Gatekeeper le demande, puis saisis ton mot de passe administrateur. Cette méthode conserve aussi une sauvegarde de l’installation précédente.
+Si tu préfères ne pas utiliser le paquet macOS, télécharge `Resolve-Project-Creation-Tool-v0.16.zip`, décompresse-le, ferme Resolve et ouvre `install.command` par double-clic. Confirme l’ouverture si Gatekeeper le demande, puis saisis ton mot de passe administrateur. Cette méthode conserve aussi une sauvegarde de l’installation précédente.
 
 Une sauvegarde horodatée de la version précédente est conservée dans `.backups`, à l’intérieur du dossier des intégrations Resolve.
 
@@ -69,7 +69,7 @@ Les rushs sont classés par marque, modèle et date. Les autres types de média 
 
 Les sous-dossiers `Proxy` créés par Blackmagic Proxy Generator sont ignorés pendant le scan; les fichiers originaux restent détectés dans leur emplacement source.
 
-Les fichiers cachés sont ignorés. Quand un fichier vidéo Canon possède un XML homonyme à côté de lui, ce XML est traité comme une fiche de métadonnées : sa marque et son modèle peuvent servir au classement, et il n’apparaît pas comme séquence à importer. Les XML sans vidéo associée restent considérés comme des séquences.
+Les fichiers cachés sont ignorés. Quand un fichier vidéo possède un sidecar XML (Canon : `CLIP.XML`, Sony : `C0001M01.XML`), ce XML est traité comme une fiche de métadonnées : sa marque et son modèle peuvent servir au classement, et il n’apparaît pas comme séquence à importer. Les XML sans vidéo associée restent considérés comme des séquences.
 
 L’analyse utilise d’abord le `ffprobe` inclus dans l’archive pour lire les durées, les formats et les métadonnées de plusieurs conteneurs courants. Les champs de caméra non détectés restent modifiables avant la création. Pour la date, l’outil utilise les métadonnées disponibles, puis la date de création du fichier comme repli. Une date de repli est signalée. Le binaire est une compilation FFmpeg LGPL sans modules GPL; les mentions, la licence et le lien vers le code source correspondant se trouvent dans `plugin/FFmpeg-NOTICE.md`.
 
@@ -95,7 +95,7 @@ Cette option prépare une timeline de départ; elle ne crée pas de montage édi
 
 Le générateur travaille sur les dossiers surveillés et leurs sous-dossiers; il peut donc traiter des fichiers qui ont été exclus de la liste d’import du plugin. Les proxies sont écrits dans des sous-dossiers `proxy` à côté des médias. Resolve associe automatiquement les proxies reconnus à leurs originaux. L’outil ne change pas le format, la résolution ni le réglage de démarrage du générateur. Selon ce dernier réglage, le traitement peut démarrer automatiquement à l’ouverture. Les dossiers enregistrés restent surveillés jusqu’à ce que tu les retires dans l’application. L’outil met à jour le fichier de préférences local de Blackmagic Proxy Generator; Blackmagic ne documente pas d’API publique pour cette opération, donc une évolution de son format de préférences pourrait nécessiter une mise à jour du plugin.
 
-## Fonctions hors périmètre de la v0.14
+## Fonctions hors périmètre
 
 - **Archivage** — Aucun archivage de projet n’est proposé; cette fonction n’est pas prévue dans le périmètre actuel.
 - **Dossiers Finder et sauvegarde des médias** — Le plugin organise les chutiers Resolve et conserve les médias à leur emplacement. Il ne crée pas une arborescence disque et ne réalise pas de copie de sauvegarde.
@@ -111,7 +111,8 @@ Le générateur travaille sur les dossiers surveillés et leurs sous-dossiers; i
 
 ## Développement et versions
 
-- Code source du plugin : [`plugin/`](plugin/)
+- Code source du plugin : [`plugin/`](plugin/) — la logique de classement pure est dans [`plugin/lib/media.js`](plugin/lib/media.js).
+- Tests : `npm test` (Node 20+, sans Resolve). Les rushs d’exemple de `rush test/` restent locaux et ne sont pas versionnés.
 - Historique des changements : [`CHANGELOG.md`](CHANGELOG.md)
 - Chaque nouvelle version du plugin reçoit un numéro `v0.xx`, inscrit dans le manifeste et le paquet, puis publié comme tag et release GitHub.
 - L’archive de release contient `WorkflowIntegration.node` signé par Blackmagic et `ffprobe` universel. Depuis le dépôt de développement, `build.command` peut encore reprendre le module Workflow Integration depuis l’installation locale de Resolve.

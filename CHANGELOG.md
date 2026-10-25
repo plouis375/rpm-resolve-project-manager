@@ -1,5 +1,18 @@
 # Historique des versions
 
+## v0.16 — 25 octobre 2026
+
+- Corrige l’association des clips après import : le rapport d’échecs et la timeline d’assemblage restent justes même si un fichier d’un lot n’est pas importé.
+- Applique le format de timeline (résolution, fréquence) avant l’import, réglage par réglage via `SetSetting`. Les fréquences non standard sont ramenées à la plus proche.
+- Reconnaît les sidecars XML Sony (`C0001M01.XML`) : ils ne sont plus pris pour des séquences, et leur marque, modèle et date servent au classement.
+- Convertit les dates de tournage UTC en heure locale (fin du décalage d’un jour pour les plans tournés autour de minuit).
+- Détecte aussi les doublons de fichiers sans durée (images, PDF…).
+- Reconnaissance des marques par mots entiers (« red » dans un autre mot ne donne plus RED).
+- Comparaison des doublons plus rapide : empreinte des 4 premiers et 4 derniers Mo, lecture complète seulement si nécessaire.
+- `install.command` et `uninstall.command` demandent les droits administrateur ; les sauvegardes vont dans `.backups`.
+- Politique de sécurité (CSP) dans l’interface, fond de fenêtre assorti au thème clair.
+- Logique de classement extraite dans `plugin/lib/media.js` et couverte par des tests (`npm test`).
+
 ## v0.15 — 17 octobre 2026
 
 - Permet de choisir indépendamment la résolution et la fréquence d’images de la timeline d’assemblage.

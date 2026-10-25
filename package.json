@@ -1,0 +1,5 @@
+{
+  "name": "resolve-project-creation-tool-dev",
+  "private": true,
+  "scripts": { "test": "TZ=Europe/Paris node --test tests/*.test.js" }
+}

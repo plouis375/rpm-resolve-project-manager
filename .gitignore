@@ -1,4 +1,9 @@
 dist/
 work/
 .DS_Store
+._*
 .impeccable/
+node_modules/
+rush test/
+*.MXF
+*.mxf

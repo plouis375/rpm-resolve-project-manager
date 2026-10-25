@@ -7,16 +7,14 @@ const crypto = require('node:crypto');
 const { createReadStream } = require('node:fs');
 const WorkflowIntegration = require('./WorkflowIntegration.node');
 const { addWatchFolders, isProcessRunning } = require('./proxy-settings');
+const {
+  VIDEO, SEQUENCE, SUPPORTED, FRAME_RATES, cleanText, categoryFor, normalizeBrand, normalizeDate, localDate,
+  sidecarCandidates, filterSidecars, parseSidecarXml, markDuplicates, dominantFormat, nearestFrameRate, matchImported
+} = require('./lib/media');
 
 const execFileAsync = promisify(execFile);
 const PLUGIN_ID = 'com.idolatry.resolveprojectcreationtool';
 const BIN_NAMES = ['Rushs', 'Assets', 'Éléments', 'Séquences', 'Musiques', 'Exports'];
-const VIDEO = new Set(['.mov', '.mp4', '.m4v', '.mxf', '.avi', '.mpg', '.mpeg', '.mkv', '.mts', '.m2ts', '.braw', '.r3d', '.ari', '.crm', '.3gp', '.webm']);
-const AUDIO = new Set(['.wav', '.aif', '.aiff', '.mp3', '.m4a', '.aac', '.flac', '.ogg', '.opus', '.wma']);
-const STILL = new Set(['.png', '.jpg', '.jpeg', '.tif', '.tiff', '.bmp', '.webp', '.heic', '.heif', '.exr', '.dpx', '.dng', '.arw', '.cr2', '.cr3', '.nef', '.raf']);
-const GRAPHIC = new Set(['.psd', '.ai', '.eps', '.svg', '.pdf']);
-const SEQUENCE = new Set(['.fcpxml', '.edl', '.aaf', '.drt', '.otio', '.xml']);
-const SUPPORTED = new Set([...VIDEO, ...AUDIO, ...STILL, ...GRAPHIC, ...SEQUENCE]);
 const PROBE_PATHS = ['/opt/homebrew/bin/ffprobe', '/usr/local/bin/ffprobe', '/usr/bin/ffprobe'];
 const PROXY_GENERATOR_APP = '/Applications/Blackmagic Proxy Generator.app';
 const PROXY_GENERATOR_EXECUTABLE = `${PROXY_GENERATOR_APP}/Contents/MacOS/Blackmagic Proxy Generator`;
@@ -91,8 +89,16 @@ async function findFFprobe() {
   return null;
 }
 
-function cleanText(value) {
-  return String(value || '').trim().replace(/[\u0000-\u001f]/g, '');
+async function readSidecar(filePath) {
+  for (const candidate of sidecarCandidates(filePath)) {
+    try {
+      const stat = await fs.stat(candidate);
+      if (!stat.isFile() || stat.size > 1024 * 1024) continue;
+      const parsed = parseSidecarXml(await fs.readFile(candidate, 'utf8'));
+      if (parsed) return parsed;
+    } catch (_) {}
+  }
+  return null;
 }
 
 function metadataValue(tags, candidates) {
@@ -102,16 +108,6 @@ function metadataValue(tags, candidates) {
     if (match) return match[1];
   }
   return '';
-}
-
-function normalizeBrand(value, model = '') {
-  const input = `${value} ${model}`.toLowerCase();
-  const brands = [
-    ['sony', 'Sony'], ['canon', 'Canon'], ['red', 'RED'], ['arri', 'ARRI'],
-    ['blackmagic', 'Blackmagic'], ['panasonic', 'Panasonic'], ['fujifilm', 'Fujifilm'],
-    ['nikon', 'Nikon'], ['gopro', 'GoPro'], ['dji', 'DJI'], ['apple', 'Apple']
-  ];
-  return brands.find(([needle]) => input.includes(needle))?.[1] || cleanText(value);
 }
 
 function cameraModel(tags) {
@@ -126,42 +122,6 @@ function cameraMake(tags) {
     'com.blackmagic-design.camera.make', 'camera_make', 'make',
     'com.apple.quicktime.make', 'manufacturer'
   ]);
-}
-
-async function readCanonSidecar(filePath) {
-  const sidecarPath = `${filePath.slice(0, -path.extname(filePath).length)}.XML`;
-  try {
-    const stat = await fs.stat(sidecarPath);
-    if (!stat.isFile() || stat.size > 1024 * 1024) return null;
-    const xml = await fs.readFile(sidecarPath, 'utf8');
-    // Canon sidecars are tiny metadata documents. Reject DTD/entity declarations
-    // and read only the two expected leaf values to avoid external entity parsing.
-    if (/<!DOCTYPE|<!ENTITY/i.test(xml)) return null;
-    const leaf = (name) => {
-      const match = xml.match(new RegExp(`<${name}\\b[^>]*>([^<]*)<\\/${name}\\s*>`, 'i'));
-      return match ? cleanText(match[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'")) : '';
-    };
-    const make = leaf('Manufacturer');
-    const model = leaf('ModelName');
-    return make || model ? { cameraMake: make, cameraModel: model } : null;
-  } catch (_) {
-    return null;
-  }
-}
-
-function normalizeDate(value) {
-  const input = cleanText(value);
-  const match = input.match(/(\d{4})[-:]?(\d{2})[-:]?(\d{2})/);
-  if (match) return `${match[1]}-${match[2]}-${match[3]}`;
-  const date = new Date(input);
-  return Number.isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 10);
-}
-
-function localDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }
 
 function frameRate(streams) {
@@ -227,15 +187,6 @@ async function probeWithSpotlight(filePath, signal) {
   }
 }
 
-function categoryFor(extension) {
-  if (VIDEO.has(extension)) return 'Rushs';
-  if (AUDIO.has(extension)) return 'Musiques';
-  if (SEQUENCE.has(extension)) return 'Séquences';
-  if (GRAPHIC.has(extension)) return 'Assets';
-  if (STILL.has(extension)) return 'Éléments';
-  return null;
-}
-
 function isProxyDirectory(name) {
   return name.toLocaleLowerCase('en-US') === 'proxy';
 }
@@ -245,7 +196,6 @@ async function scanDirectory(root, signal) {
   const stat = await fs.stat(resolved);
   if (!stat.isDirectory()) throw new Error(`Dossier source invalide : ${root}`);
   const files = [];
-  const canonSidecars = new Set();
   const pending = [resolved];
   while (pending.length) {
     throwIfAborted(signal);
@@ -263,16 +213,10 @@ async function scanDirectory(root, signal) {
       }
       if (!entry.isFile()) continue;
       const extension = path.extname(entry.name).toLowerCase();
-      if (VIDEO.has(extension)) {
-        const sidecar = `${filePath.slice(0, -extension.length)}.XML`;
-        try {
-          if ((await fs.stat(sidecar)).isFile()) canonSidecars.add(path.resolve(sidecar));
-        } catch (_) {}
-      }
       if (SUPPORTED.has(extension)) files.push({ filePath, extension, category: categoryFor(extension) });
     }
   }
-  return files.filter((file) => !canonSidecars.has(path.resolve(file.filePath)));
+  return filterSidecars(files);
 }
 
 async function enrichFile(file, signal) {
@@ -284,11 +228,12 @@ async function enrichFile(file, signal) {
   ]);
   throwIfAborted(signal);
   const metadata = { ...(probe || fallback || { verified: false }) };
-  if (VIDEO.has(file.extension) && (!metadata.cameraMake || !metadata.cameraModel)) {
-    const sidecar = await readCanonSidecar(file.filePath);
+  if (VIDEO.has(file.extension) && (!metadata.cameraMake || !metadata.cameraModel || !metadata.date)) {
+    const sidecar = await readSidecar(file.filePath);
     if (sidecar) {
       metadata.cameraMake ||= sidecar.cameraMake;
       metadata.cameraModel ||= sidecar.cameraModel;
+      metadata.date ||= sidecar.date;
     }
   }
   throwIfAborted(signal);
@@ -318,24 +263,6 @@ async function enrichFile(file, signal) {
     duplicateOf: null,
     include: true
   };
-}
-
-function markDuplicates(files) {
-  const firstByFingerprint = new Map();
-  for (const file of files) {
-    if (!file.duration) continue;
-    const fingerprint = `${file.name.toLocaleLowerCase('fr')}|${file.size}|${file.duration.toFixed(2)}`;
-    const first = firstByFingerprint.get(fingerprint);
-    if (first) {
-      file.duplicateOf = first.id;
-      if (!file.duplicateManuallyChanged && !file.includeManuallyChanged) {
-        file.include = false;
-        file.duplicateAutoExcluded = true;
-      }
-    } else {
-      firstByFingerprint.set(fingerprint, file);
-    }
-  }
 }
 
 function bestSourceRoot(filePath, roots) {
@@ -421,6 +348,31 @@ async function scanSources(event, paths, previousScanId, activePaths, previousFi
   };
 }
 
+const PARTIAL_HASH_BYTES = 4 * 1024 * 1024;
+
+// Empreinte rapide : taille + 4 Mo de début + 4 Mo de fin. Deux fichiers dont
+// l’empreinte rapide diffère sont forcément différents ; sinon on lit tout.
+async function partialHash(filePath, signal) {
+  throwIfAborted(signal);
+  const handle = await fs.open(filePath, 'r');
+  try {
+    const { size } = await handle.stat();
+    const hash = crypto.createHash('sha256').update(String(size));
+    const length = Math.min(PARTIAL_HASH_BYTES, size);
+    const head = Buffer.alloc(length);
+    await handle.read(head, 0, length, 0);
+    hash.update(head);
+    if (size > PARTIAL_HASH_BYTES) {
+      const tail = Buffer.alloc(length);
+      await handle.read(tail, 0, length, size - length);
+      hash.update(tail);
+    }
+    return hash.digest('hex');
+  } finally {
+    await handle.close();
+  }
+}
+
 function hashFile(filePath, signal) {
   return new Promise((resolve, reject) => {
     const hash = crypto.createHash('sha256');
@@ -465,9 +417,13 @@ async function verifyDuplicateContents(event, options, signal) {
       const group = jobs[cursor++];
       let processed = 0;
       try {
+        const partials = [];
+        for (const file of group) partials.push(await partialHash(file.filePath, signal));
+        const partialCounts = partials.reduce((map, hash) => map.set(hash, (map.get(hash) || 0) + 1), new Map());
         const hashes = [];
-        for (const file of group) {
-          hashes.push(await hashFile(file.filePath, signal));
+        for (let index = 0; index < group.length; index += 1) {
+          // Lecture complète uniquement si l’empreinte rapide est partagée.
+          hashes.push(partialCounts.get(partials[index]) > 1 ? `full:${await hashFile(group[index].filePath, signal)}` : `partial:${partials[index]}`);
           processed += 1;
           completed += 1;
           sendProgress(event, { stage: 'duplicate-check', current: completed, total, label: 'Comparaison du contenu' });
@@ -514,7 +470,7 @@ function normalizeProjectName(value) {
   const name = cleanText(value).trim();
   if (!name) throw new Error('Saisis un nom de projet.');
   if (name.length > 100) throw new Error('Le nom du projet doit contenir 100 caractères maximum.');
-  if (/[\\/:\u0000-\u001f]/.test(name)) throw new Error('Le nom ne peut pas contenir de barre oblique.');
+  if (/[\\/:\u0000-\u001f]/.test(name)) throw new Error('Le nom ne peut pas contenir « / », « \\ » ni « : ».');
   return name;
 }
 
@@ -593,6 +549,42 @@ async function findOrCreateFolder(mediaPool, parent, name) {
   return folder;
 }
 
+const TIMELINE_RESOLUTIONS = new Set(['1280x720', '1920x1080', '2048x1080', '3840x2160', '4096x2160', '1080x1920', '1080x1080']);
+
+function frameRateSetting(fps) {
+  return Number.isInteger(fps) ? String(fps) : fps.toFixed(3).replace(/0+$/, '');
+}
+
+async function applyTimelineSettings(project, rushes, options) {
+  const dominant = dominantFormat(rushes);
+  const requestedResolution = TIMELINE_RESOLUTIONS.has(options.timelineResolution) ? options.timelineResolution : 'auto';
+  const requestedFps = FRAME_RATES.includes(Number(options.timelineFrameRate)) ? Number(options.timelineFrameRate) : null;
+  const [width, height] = requestedResolution === 'auto' ? [dominant.width, dominant.height] : requestedResolution.split('x').map(Number);
+  const fps = requestedFps || nearestFrameRate(dominant.fps) || 24;
+  // L’API Resolve expose SetSetting(nom, valeur), un réglage à la fois.
+  const wanted = [
+    ['timelineFrameRate', frameRateSetting(fps)],
+    ['timelineResolutionWidth', String(width)],
+    ['timelineResolutionHeight', String(height)]
+  ];
+  let allApplied = true;
+  for (const [key, value] of wanted) {
+    try { if (!(await project.SetSetting(key, value))) allApplied = false; } catch (_) { allApplied = false; }
+  }
+  let reported = { width, height, fps };
+  try {
+    reported = {
+      width: Number(await project.GetSetting('timelineResolutionWidth')) || width,
+      height: Number(await project.GetSetting('timelineResolutionHeight')) || height,
+      fps: Number(await project.GetSetting('timelineFrameRate')) || fps
+    };
+  } catch (_) {}
+  return {
+    label: `${reported.width} × ${reported.height} · ${String(reported.fps).replace('.', ',')} i/s`,
+    warning: allApplied ? '' : 'Resolve n’a pas confirmé tous les réglages de timeline. Vérifie le format dans Resolve.'
+  };
+}
+
 async function createProject(event, options) {
   if (!integrationReady || !projectManager) throw new Error(integrationError || 'Connexion à Resolve indisponible.');
   if (creationInProgress) throw new Error('Création déjà en cours.');
@@ -648,6 +640,11 @@ async function createProject(event, options) {
       sendProgress(event, { stage: 'bins', current: index + 1, total: folders.length, label: `Création du chutier ${folder.name}` });
     }
 
+    // Le format de timeline doit être fixé AVANT l’import : Resolve verrouille la
+    // fréquence d’images du projet dès que des clips ou une timeline existent.
+    let timelineSettings = null;
+    if (options.createTimeline) timelineSettings = await applyTimelineSettings(project, selected.filter((file) => file.category === 'Rushs'), options);
+
     const importable = selected.filter((file) => !SEQUENCE.has(file.extension));
     const sequenceFiles = selected.filter((file) => SEQUENCE.has(file.extension));
     const groupMap = new Map();
@@ -678,10 +675,19 @@ async function createProject(event, options) {
       for (let offset = 0; offset < group.files.length; offset += 25) {
         const batch = group.files.slice(offset, offset + 25);
         const result = await mediaPool.ImportMedia(batch.map((file) => file.filePath));
-        const items = Array.isArray(result) ? result : [];
-        for (let index = 0; index < batch.length; index += 1) {
-          if (!items[index]) failures.push(batch[index].name);
-          else if (batch[index].category === 'Rushs') importedRushes.push({ file: batch[index], item: items[index] });
+        const items = (Array.isArray(result) ? result : []).filter(Boolean);
+        // Resolve ne renvoie que les clips importés : on associe par chemin, pas par position.
+        const importedPaths = await Promise.all(items.map(async (item) => {
+          try { return await item.GetClipProperty('File Path'); } catch (_) { return ''; }
+        }));
+        // Repli : si Resolve ne donne aucun chemin mais autant de clips que demandé, l'ordre fait foi.
+        const pathsKnown = importedPaths.some(Boolean);
+        const { matched, failed } = pathsKnown || items.length !== batch.length
+          ? matchImported(batch, importedPaths)
+          : { matched: batch.map((file, index) => ({ file, index })), failed: [] };
+        failures.push(...failed.map((file) => file.name));
+        for (const { file, index } of matched) {
+          if (file.category === 'Rushs') importedRushes.push({ file, item: items[index] });
         }
         completedBatches += 1;
         sendProgress(event, { stage: 'import', current: completedBatches, total: Math.max(totalBatches, 1), label: 'Import des médias dans Resolve' });
@@ -706,47 +712,17 @@ async function createProject(event, options) {
 
     let timelineName = '';
     let timelineFormat = '';
-    let timelineWarning = '';
+    let timelineWarning = timelineSettings?.warning || '';
     if (options.createTimeline && importedRushes.length) {
-      const dominant = dominantFormat(importedRushes.map(({ file }) => file));
-      const resolutions = new Set(['1280x720', '1920x1080', '2048x1080', '3840x2160', '4096x2160', '1080x1920', '1080x1080']);
-      const frameRates = new Set(['23.976', '24', '25', '29.97', '30', '50', '59.94', '60']);
-      const requestedResolution = resolutions.has(options.timelineResolution) ? options.timelineResolution : 'auto';
-      const requestedFrameRate = frameRates.has(String(options.timelineFrameRate)) ? String(options.timelineFrameRate) : 'auto';
-      const [width, height] = requestedResolution === 'auto'
-        ? [dominant.width, dominant.height]
-        : requestedResolution.split('x').map(Number);
-      const fps = requestedFrameRate === 'auto' ? dominant.fps || 24 : Number(requestedFrameRate);
-      const settings = {
-        timelineResolutionWidth: String(width),
-        timelineResolutionHeight: String(height),
-        timelineFrameRate: String(fps)
-      };
-      const settingsApplied = await project.SetSettings(settings);
-      let reportedWidth = width;
-      let reportedHeight = height;
-      let reportedFps = fps;
-      if (!settingsApplied) {
-        timelineWarning = 'Resolve n’a pas confirmé les réglages de timeline demandés. Vérifie le format dans Resolve.';
-        try {
-          reportedWidth = Number(await project.GetSetting('timelineResolutionWidth')) || 0;
-          reportedHeight = Number(await project.GetSetting('timelineResolutionHeight')) || 0;
-          reportedFps = Number(await project.GetSetting('timelineFrameRate')) || 0;
-        } catch (_) {
-          reportedWidth = reportedHeight = reportedFps = 0;
-        }
-      }
       const selectedFolder = await mediaPool.SetCurrentFolder(bins.Séquences || root);
       if (!selectedFolder) throw new Error('Resolve n’a pas pu sélectionner le chutier Séquences.');
       timelineName = `${name} — Assemblage`;
-      const timeline = await mediaPool.CreateTimelineFromClips(timelineName, importedRushes.map(({ item }) => ({ mediaPoolItem: item })));
+      const timeline = await mediaPool.CreateTimelineFromClips(timelineName, importedRushes.map(({ item }) => item));
       if (!timeline) {
         timelineName = '';
         timelineWarning = 'Resolve n’a pas créé la timeline. Le projet et les médias sont conservés.';
       } else {
-        timelineFormat = reportedWidth && reportedHeight && reportedFps
-          ? `${reportedWidth} × ${reportedHeight} · ${reportedFps} i/s`
-          : 'Format à vérifier dans Resolve';
+        timelineFormat = timelineSettings.label;
       }
     } else if (options.createTimeline) {
       timelineWarning = 'Aucun rush vidéo retenu. La timeline d’assemblage n’a pas été créée.';
@@ -776,19 +752,6 @@ async function createProject(event, options) {
   } finally {
     creationInProgress = false;
   }
-}
-
-function dominantFormat(files) {
-  const formats = new Map();
-  for (const file of files) {
-    if (!file.width || !file.height) continue;
-    const fps = file.fps ? Number(file.fps.toFixed(3)) : null;
-    const key = `${file.width}x${file.height}@${fps || 'unknown'}`;
-    formats.set(key, { width: file.width, height: file.height, fps, count: (formats.get(key)?.count || 0) + 1 });
-  }
-  const ordered = [...formats.values()].sort((a, b) => b.count - a.count || b.width * b.height - a.width * a.height);
-  if (ordered.length && (ordered.length === 1 || ordered[0].count > ordered[1].count)) return ordered[0];
-  return { width: 1920, height: 1080, fps: ordered.find((item) => item.fps)?.fps || 24 };
 }
 
 function registerHandlers() {
@@ -854,7 +817,7 @@ function createWindow() {
     minWidth: 1050,
     minHeight: 720,
     title: 'Resolve Project Creation Tool',
-    backgroundColor: '#111315',
+    backgroundColor: '#d6d0c6',
     show: false,
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 18, y: 20 },
