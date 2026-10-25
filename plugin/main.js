@@ -932,10 +932,14 @@ function registerHandlers() {
     if (path.basename(pluginDir) !== PLUGIN_ID || !pluginDir.includes('/Workflow Integration Plugins/')) {
       throw new Error('Emplacement du plugin inattendu : désinstallation annulée.');
     }
-    const shell = `rm -rf '${pluginDir.replace(/'/g, "'\\''")}'`;
-    const script = `do shell script ${JSON.stringify(shell)} with administrator privileges`;
+    // Le chemin est passé en argument à osascript (jamais concaténé au script) et quoté par « quoted form of ».
+    const script = [
+      'on run argv',
+      'do shell script "rm -rf " & quoted form of (item 1 of argv) with administrator privileges',
+      'end run'
+    ];
     try {
-      await execFileAsync('/usr/bin/osascript', ['-e', script]);
+      await execFileAsync('/usr/bin/osascript', [...script.flatMap((line) => ['-e', line]), pluginDir]);
     } catch (error) {
       if (/-128|annul|cancel/i.test(String(error.stderr || error.message))) return { ok: false, cancelled: true };
       throw new Error('La désinstallation a échoué. Réessaie, ou supprime le dossier du plugin à la main.');
