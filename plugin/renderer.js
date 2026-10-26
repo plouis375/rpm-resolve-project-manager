@@ -862,6 +862,18 @@ async function refreshStatus() {
   }
 }
 
+// Bandeau discret si une version plus récente existe ; silencieux hors ligne.
+(async () => {
+  try {
+    const update = await window.projectTool.checkUpdate();
+    if (!update) return;
+    $('updateText').textContent = `La version ${update.version} est disponible.`;
+    $('updateLink').hidden = !update.url;
+    $('updateLink').onclick = () => window.projectTool.openRelease(update.url);
+    $('updateBanner').hidden = false;
+  } catch (_) {}
+})();
+
 document.querySelectorAll('.step').forEach((button) => button.addEventListener('click', () => {
   const target = Number(button.dataset.step);
   if (target < state.step && target < 4) setStep(target);

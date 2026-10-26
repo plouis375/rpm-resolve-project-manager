@@ -1,5 +1,9 @@
 # Historique des versions
 
+## v0.31.0 — 26 octobre 2026
+
+- **Vérification des mises à jour.** À l’ouverture, le plugin interroge la dernière release GitHub et affiche un bandeau discret sur la première étape si une version plus récente existe. L’appel se fait depuis le processus principal (la politique de sécurité de l’interface reste inchangée), avec un délai de 5 s : hors ligne ou en cas d’erreur, rien ne s’affiche. Le lien ne s’ouvre que sur une page du dépôt du plugin.
+
 ## v0.30.0 — 26 octobre 2026
 
 - **Exporter le rapport** : un bouton à l’étape Terminé enregistre le rapport en TXT ou en CSV (séparateur « ; » et UTF-8, ouvert directement par Excel). Il liste chaque fichier avec son statut (importé, échec, à vérifier), les plans sans CST ou refusés, les jours de synchro non confirmés, les multicams, proxies et métadonnées refusés.

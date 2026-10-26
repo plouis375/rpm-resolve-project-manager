@@ -43,12 +43,15 @@
           <input id="projectName" class="text-field" type="text" maxlength="100" placeholder="Nom du projet" autocomplete="off" spellcheck="false">
           <p class="field-note">Le projet sera créé dans le dossier actuellement ouvert dans Resolve.</p>
         </div>
+        <div class="update-banner" id="updateBanner" hidden>
+          <span id="updateText"></span><button class="link-button" id="updateLink" type="button">Voir la version</button>
+        </div>
         <div class="bin-preview">
           <h2>Structure de départ</h2>
           <div class="bin-list" id="binPreview"></div>
         </div>
         <div class="view-footer">
-          <div class="connection-wrap"><span class="muted" id="connectionState">Connexion à Resolve…</span><button class="button secondary compact" id="retryConnection" hidden>Reconnecter</button><span class="app-meta">v0.30 · <button class="link-button" id="uninstallPlugin" type="button">Désinstaller</button></span></div>
+          <div class="connection-wrap"><span class="muted" id="connectionState">Connexion à Resolve…</span><button class="button secondary compact" id="retryConnection" hidden>Reconnecter</button><span class="app-meta">v0.31 · <button class="link-button" id="uninstallPlugin" type="button">Désinstaller</button></span></div>
           <button class="button primary" id="toSources" disabled>Continuer</button>
         </div>
       </section>

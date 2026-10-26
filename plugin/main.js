@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const fs = require('node:fs/promises');
@@ -6,6 +6,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { createReadStream } = require('node:fs');
 const WorkflowIntegration = require('./WorkflowIntegration.node');
+const { checkForUpdate, RELEASE_PAGE_PREFIX } = require('./lib/updates');
 const { buildTextReport, buildCsvReport } = require('./lib/report');
 const { findProxy } = require('./lib/proxies');
 const { addWatchFolders, isProcessRunning } = require('./proxy-settings');
@@ -660,6 +661,10 @@ function registerHandlers() {
     const csv = path.extname(choice.filePath).toLowerCase() === '.csv';
     await fs.writeFile(choice.filePath, csv ? buildCsvReport(result) : buildTextReport(result), 'utf8');
     return choice.filePath;
+  });
+  ipcMain.handle('tool:check-update', () => checkForUpdate(require('./package.json').version));
+  ipcMain.handle('tool:open-release', async (_event, url) => {
+    if (typeof url === 'string' && url.startsWith(RELEASE_PAGE_PREFIX)) await shell.openExternal(url);
   });
   ipcMain.handle('tool:reconnect', connectResolve);
   ipcMain.handle('tool:choose-sources', async () => {

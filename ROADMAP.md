@@ -68,7 +68,7 @@ Coche chaque point une fois livré, avec la version correspondante.
 - Faire remonter les avertissements Resolve (`warnResolve`, aujourd'hui seulement dans la console) dans ce rapport.
 
 ### 4.2 Vérifier les mises à jour
-- [ ] À l'ouverture, interroger `https://api.github.com/repos/plouis375/rpm-resolve-project-manager/releases/latest` et afficher un bandeau discret si une version plus récente existe. Ne jamais bloquer, et rester silencieux hors ligne.
+- [x] (v0.31.0, appel depuis main.js, CSP inchangée) À l'ouverture, interroger `https://api.github.com/repos/plouis375/rpm-resolve-project-manager/releases/latest` et afficher un bandeau discret si une version plus récente existe. Ne jamais bloquer, et rester silencieux hors ligne.
 - Adapter la CSP de `plugin/index.html` (`connect-src`), ou faire l'appel depuis `main.js`.
 
 ### 4.3 Gros volumes

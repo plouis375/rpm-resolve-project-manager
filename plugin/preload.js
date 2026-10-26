@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld('projectTool', {
   resetBinPreferences: () => ipcRenderer.invoke('tool:reset-bin-preferences'),
   listSettingsPresets: () => ipcRenderer.invoke('tool:list-settings-presets'),
   exportReport: (result) => ipcRenderer.invoke('tool:export-report', result),
+  checkUpdate: () => ipcRenderer.invoke('tool:check-update'),
+  openRelease: (url) => ipcRenderer.invoke('tool:open-release', url),
   reconnect: () => ipcRenderer.invoke('tool:reconnect'),
   chooseSources: () => ipcRenderer.invoke('tool:choose-sources'),
   scanSources: (operationId, paths, previousScanId, activePaths, previousFiles, forceRefresh) => ipcRenderer.invoke('tool:scan-sources', operationId, paths, previousScanId, activePaths, previousFiles, forceRefresh),

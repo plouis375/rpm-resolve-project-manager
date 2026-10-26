@@ -210,6 +210,10 @@ Si un rush a déjà un proxy dans un sous-dossier `proxy` voisin (même nom de f
 
 À l’étape Terminé, **Exporter le rapport** enregistre un fichier TXT ou CSV : statut de chaque fichier, plans sans CST, jours dont la synchro n’est pas confirmée, éléments refusés par Resolve et avertissements techniques. Le CSV s’ouvre directement dans Excel.
 
+## 🔔 Mises à jour
+
+À l’ouverture, un bandeau discret signale qu’une version plus récente est publiée sur GitHub. Rien n’est téléchargé ni installé automatiquement, et hors ligne le plugin reste silencieux.
+
 <a id="cst"></a>
 
 ## 🎨 Color Space Transform
