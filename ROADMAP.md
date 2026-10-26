@@ -72,7 +72,7 @@ Coche chaque point une fois livré, avec la version correspondante.
 - Adapter la CSP de `plugin/index.html` (`connect-src`), ou faire l'appel depuis `main.js`.
 
 ### 4.3 Gros volumes
-- [ ] Le tableau des sources est reconstruit en `innerHTML` à chaque modification (pagination de 160 lignes). Le tester avec plusieurs milliers de fichiers, puis ne mettre à jour que la ligne modifiée ou virtualiser la liste.
+- [x] (testé, aucun changement nécessaire) Le tableau des sources est reconstruit en `innerHTML` à chaque modification (pagination de 160 lignes). Mesuré dans le navigateur avec 5 000 fichiers : rendu du tableau 15 à 20 ms, aperçu du Media Pool 18 ms ; avec 20 000 fichiers : 22 ms et 34 ms. La pagination suffit, la virtualisation n’apporterait rien.
 
 ### 4.4 Interface en anglais
 - [ ] Sortir les textes dans un fichier de traductions et choisir la langue selon `app.getLocale()`, avec un sélecteur. Prévoir le README anglais.
