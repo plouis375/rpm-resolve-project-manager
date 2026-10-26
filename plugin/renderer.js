@@ -410,10 +410,20 @@ const COLOR_PROFILES = [
   ['sony-slog3', 'S-Log3 · S-Gamut3.Cine'],
   ['canon-clog2', 'Canon Log 2'],
   ['canon-clog3', 'Canon Log 3'],
+  ['panasonic-vlog', 'V-Log · gestion couleur seulement'],
+  ['fujifilm-flog', 'F-Log · gestion couleur seulement'],
+  ['fujifilm-flog2', 'F-Log2 · gestion couleur seulement'],
+  ['nikon-nlog', 'N-Log · gestion couleur seulement'],
+  ['dji-dlog', 'D-Log · gestion couleur seulement'],
+  ['apple-log', 'Apple Log · gestion couleur seulement'],
+  ['arri-logc3', 'ARRI LogC3 · gestion couleur seulement'],
+  ['arri-logc4', 'ARRI LogC4 · gestion couleur seulement'],
+  ['red-log3g10', 'RED Log3G10 · gestion couleur seulement'],
+  ['bmd-filmgen5', 'Blackmagic Film Gen 5 · gestion couleur seulement'],
   ['none', 'Aucun CST · déjà en Rec.709']
 ];
 const CAMERA_PROFILES = [
-  [/\bFX3\b|\bFX6V?\b|\bFX9\b|\bBURANO\b|\bMPC-2610\b/i, 'sony-slog3'],
+  [/\bFX3\b|\bFX30\b|\bFX6V?\b|\bFX9\b|\bBURANO\b|\bMPC-2610\b|\bILCE-(?:7SM3|7M4|1|7RM5)\b|\bA7S ?III\b|\bA7 ?IV\b|\bZV-E1\b|\bFR7\b/i, 'sony-slog3'],
   [/\bC50\b|\bC70\b/i, 'canon-clog2'],
   [/\bR5(?:\s?C)?\b/i, 'canon-clog3']
 ];

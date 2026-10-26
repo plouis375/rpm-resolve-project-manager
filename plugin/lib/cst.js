@@ -5,8 +5,21 @@
 const PROFILES = {
   'sony-slog3': 'S-Gamut3.Cine / S-Log3',
   'canon-clog2': 'Cinema Gamut / Canon Log 2',
-  'canon-clog3': 'Cinema Gamut / Canon Log 3'
+  'canon-clog3': 'Cinema Gamut / Canon Log 3',
+  'panasonic-vlog': 'V-Gamut / V-Log',
+  'fujifilm-flog': 'F-Gamut / F-Log',
+  'fujifilm-flog2': 'F-Gamut / F-Log2',
+  'nikon-nlog': 'N-Gamut / N-Log',
+  'dji-dlog': 'DJI D-Gamut / D-Log',
+  'apple-log': 'Apple Log',
+  'arri-logc3': 'ARRI Wide Gamut 3 / ARRI LogC3',
+  'arri-logc4': 'ARRI Wide Gamut 4 / ARRI LogC4',
+  'red-log3g10': 'REDWideGamutRGB / Log3G10',
+  'bmd-filmgen5': 'Blackmagic Design Wide Gamut Gen 5 / Film Gen 5'
 };
+
+// Profils sans preset .drx : ils ne fonctionnent qu’avec la gestion couleur du projet.
+const MANAGED_ONLY = new Set(['panasonic-vlog', 'fujifilm-flog', 'fujifilm-flog2', 'nikon-nlog', 'dji-dlog', 'apple-log', 'arri-logc3', 'arri-logc4', 'red-log3g10', 'bmd-filmgen5']);
 
 const OUTPUTS = { rec709a: 'Rec.709-A', gamma24: 'Gamma 2.4' };
 
@@ -16,14 +29,24 @@ const COLOR_MANAGED_MODE = 'davinciYRGBColorManagedv2';
 const INPUT_COLOR_SPACES = {
   'sony-slog3': 'S-Gamut3.Cine/S-Log3',
   'canon-clog2': 'Cinema Gamut/Canon Log 2',
-  'canon-clog3': 'Cinema Gamut/Canon Log 3'
+  'canon-clog3': 'Cinema Gamut/Canon Log 3',
+  'panasonic-vlog': 'V-Gamut/V-Log',
+  'fujifilm-flog': 'F-Gamut/F-Log',
+  'fujifilm-flog2': 'F-Gamut/F-Log2',
+  'nikon-nlog': 'N-Gamut/N-Log',
+  'dji-dlog': 'DJI D-Gamut/D-Log',
+  'apple-log': 'Apple Log',
+  'arri-logc3': 'ARRI Wide Gamut 3/ARRI LogC3',
+  'arri-logc4': 'ARRI Wide Gamut 4/ARRI LogC4',
+  'red-log3g10': 'REDWideGamutRGB/Log3G10',
+  'bmd-filmgen5': 'Blackmagic Design Wide Gamut Gen 5/Blackmagic Design Film Gen 5'
 };
 const MANAGED_TIMELINE_SPACE = 'DaVinci WG/Intermediate';
 const MANAGED_OUTPUT_SPACES = { rec709a: 'Rec.709-A', gamma24: 'Rec.709 Gamma 2.4' };
 
 // Mots entiers : « FX3 » ne doit pas attraper « FX30 ».
 const CAMERAS = [
-  [/\bFX3\b|\bFX6V?\b|\bFX9\b|\bBURANO\b|\bMPC-2610\b/i, 'sony-slog3'],
+  [/\bFX3\b|\bFX30\b|\bFX6V?\b|\bFX9\b|\bBURANO\b|\bMPC-2610\b|\bILCE-(?:7SM3|7M4|1|7RM5)\b|\bA7S ?III\b|\bA7 ?IV\b|\bZV-E1\b|\bFR7\b/i, 'sony-slog3'],
   [/\bC50\b|\bC70\b/i, 'canon-clog2'],
   [/\bR5(?:\s?C)?\b/i, 'canon-clog3']
 ];
@@ -50,4 +73,4 @@ function presetFileName(profile, output) {
   return `${profile}_${output}.drx`;
 }
 
-module.exports = { PROFILES, OUTPUTS, COLOR_MANAGED_MODE, INPUT_COLOR_SPACES, MANAGED_TIMELINE_SPACE, MANAGED_OUTPUT_SPACES, profileForCamera, profileFromMetadata, presetFileName };
+module.exports = { MANAGED_ONLY, PROFILES, OUTPUTS, COLOR_MANAGED_MODE, INPUT_COLOR_SPACES, MANAGED_TIMELINE_SPACE, MANAGED_OUTPUT_SPACES, profileForCamera, profileFromMetadata, presetFileName };

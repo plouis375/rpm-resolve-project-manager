@@ -41,8 +41,8 @@ Coche chaque point une fois livré, avec la version correspondante.
 - Garder le mode node CST (`.drx`) au choix. Régler les paramètres de gestion couleur du projet avec `SetSetting`.
 
 ### 2.2 Plus de caméras et de profils log
-- [ ] Sony S-Log3 sur tous les modèles (A7S III, FX30, A7 IV, A1…). Aujourd'hui FX30 est exclu volontairement par la regex de `plugin/lib/cst.js`.
-- [ ] Panasonic V-Log, Fujifilm F-Log et F-Log2, Nikon N-Log, DJI D-Log et D-Log M, iPhone Apple Log, ARRI LogC3 et LogC4, RED Log3G10, Blackmagic Film Gen 5.
+- [x] (v0.26.0) Sony S-Log3 sur tous les modèles (A7S III, FX30, A7 IV, A1…). Aujourd'hui FX30 est exclu volontairement par la regex de `plugin/lib/cst.js`.
+- [x] (v0.26.0, choix manuel, gestion couleur seulement : pas de .drx) Panasonic V-Log, Fujifilm F-Log et F-Log2, Nikon N-Log, DJI D-Log et D-Log M, iPhone Apple Log, ARRI LogC3 et LogC4, RED Log3G10, Blackmagic Film Gen 5.
 - Pour chaque profil : un preset `.drx` par sortie (Rec.709-A et Gamma 2.4) exporté depuis Resolve dans `plugin/presets/`, l'entrée dans `PROFILES`, le libellé dans `renderer.js` (`COLOR_PROFILES`) et les tests. Avec la gestion couleur (2.1), on n'a besoin que du nom de l'espace d'entrée.
 
 ### 2.3 Détection du profil depuis le fichier

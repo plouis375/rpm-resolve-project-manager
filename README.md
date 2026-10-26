@@ -206,9 +206,11 @@ Avec **Appliquer un Color Space Transform**, chaque plan reçoit un node CST sel
 
 | Caméras | Profil d’entrée |
 |---|---|
-| Sony FX3 · FX6 · FX9 · Burano | S-Gamut3.Cine / S-Log3 |
+| Sony FX3 · FX30 · FX6 · FX9 · Burano · A7S III · A7 IV · A1 · A7R V · ZV-E1 · FR7 | S-Gamut3.Cine / S-Log3 |
 | Canon C50 · C70 | Cinema Gamut / Canon Log 2 |
 | Canon R5 | Cinema Gamut / Canon Log 3 |
+
+Dix autres profils se choisissent à la main dans la colonne **Profil couleur** : Panasonic V-Log, Fujifilm F-Log et F-Log2, Nikon N-Log, DJI D-Log, Apple Log, ARRI LogC3 et LogC4, RED Log3G10, Blackmagic Film Gen 5. Ils n’ont pas de preset `.drx` et demandent la méthode **Gestion couleur du projet**.
 
 **Sortie** : Rec.709-A (visionnage sur Mac) ou Rec.709 Gamma 2.4 (diffusion).
 

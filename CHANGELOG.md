@@ -1,5 +1,10 @@
 # Historique des versions
 
+## v0.26.0 — 26 octobre 2026
+
+- **Plus de caméras et de profils log.** Sony S-Log3 sur davantage de modèles (FX30, A7S III, A7 IV, A1, A7R V, ZV-E1, FR7) : le gamma lu dans le XML Sony décide toujours en premier. Dix nouveaux profils à choisir à la main dans la colonne « Profil couleur » : Panasonic V-Log, Fujifilm F-Log et F-Log2, Nikon N-Log, DJI D-Log, Apple Log, ARRI LogC3 et LogC4, RED Log3G10, Blackmagic Film Gen 5.
+- Ces dix profils n'ont pas de preset `.drx` : ils fonctionnent avec la méthode « Gestion couleur du projet » (le nom de l'espace d'entrée suffit). En mode node CST, leurs plans sont signalés comme non étalonnés. Les noms d'espaces suivent l'interface de Resolve et sont à valider sur ta version.
+
 ## v0.25.0 — 26 octobre 2026
 
 - **Gestion couleur du projet, au choix à la place des nodes CST** : en cochant « Appliquer un Color Space Transform », la nouvelle liste « Méthode » propose « Gestion couleur du projet ». Le projet passe en DaVinci YRGB Color Managed v2 (timeline en DaVinci WG/Intermediate, sortie Rec.709-A ou Gamma 2.4 selon le choix existant) et chaque clip reçoit son espace d’entrée (`Input Color Space`) selon sa colonne « Profil couleur ». Presque instantané, et sans besoin de timeline. Le mode « node CST » reste le défaut.

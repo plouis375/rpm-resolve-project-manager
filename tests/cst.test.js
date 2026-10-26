@@ -17,7 +17,7 @@ test('profileForCamera : caméras prises en charge', () => {
 });
 
 test('profileForCamera : pas de faux positifs', () => {
-  assert.equal(c.profileForCamera('Sony', 'ILME-FX30'), null);
+  assert.equal(c.profileForCamera('Sony', 'ILCE-7M3'), null);
   assert.equal(c.profileForCamera('Canon', 'EOS C700'), null);
   assert.equal(c.profileForCamera('Canon', 'EOS R50'), null);
   assert.equal(c.profileForCamera('À identifier', 'À identifier'), null);
@@ -25,7 +25,7 @@ test('profileForCamera : pas de faux positifs', () => {
 });
 
 test('presetFileName : tous les presets existent', () => {
-  for (const profile of Object.keys(c.PROFILES)) {
+  for (const profile of Object.keys(c.PROFILES).filter((key) => !c.MANAGED_ONLY.has(key))) {
     for (const output of Object.keys(c.OUTPUTS)) {
       const file = path.join(__dirname, '../plugin/presets', c.presetFileName(profile, output));
       assert.ok(fs.existsSync(file), file);
@@ -40,4 +40,18 @@ test('profileFromMetadata : gamma Sony prioritaire', () => {
   assert.equal(c.profileFromMetadata('Sony', 'ILME-FX3', 'hlg'), 'none');
   assert.equal(c.profileFromMetadata('Sony', 'ILME-FX3', 's-log2'), null);
   assert.equal(c.profileFromMetadata('Canon', 'EOS C70', ''), 'canon-clog2');
+});
+
+test('Sony : FX30, A7S III, A7 IV, A1 reçoivent S-Log3', () => {
+  for (const model of ['ILME-FX30', 'ILCE-7SM3', 'ILCE-7M4', 'ILCE-1', 'ZV-E1']) assert.equal(c.profileForCamera('Sony', model), 'sony-slog3', model);
+});
+
+test('chaque profil a un espace d’entrée, et seuls les profils sans .drx sont réservés à la gestion couleur', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  for (const key of Object.keys(c.PROFILES)) {
+    assert.ok(c.INPUT_COLOR_SPACES[key], key);
+    const hasPreset = fs.existsSync(path.join(__dirname, '..', 'plugin', 'presets', c.presetFileName(key, 'rec709a')));
+    assert.equal(hasPreset, !c.MANAGED_ONLY.has(key), key);
+  }
 });
