@@ -22,6 +22,10 @@ const PROBE_PATHS = ['/opt/homebrew/bin/ffprobe', '/usr/local/bin/ffprobe', '/us
 const PROXY_GENERATOR_APP = '/Applications/Blackmagic Proxy Generator.app';
 const PROXY_GENERATOR_EXECUTABLE = `${PROXY_GENERATOR_APP}/Contents/MacOS/Blackmagic Proxy Generator`;
 
+// Fenêtre grise ou à moitié dessinée (compositeur GPU d'Electron dans Resolve) : l'interface est légère,
+// le rendu logiciel est largement suffisant et évite ces blocages.
+app.disableHardwareAcceleration();
+
 let mainWindow;
 let resolveObj;
 let projectManager;
@@ -468,6 +472,14 @@ function registerHandlers() {
   });
 }
 
+// Journal des incidents d'affichage, à joindre en cas de problème : ~/Library/Application Support/<plugin>/rpm-diagnostic.log
+function logDiagnostic(message) {
+  try {
+    const file = path.join(app.getPath('userData'), 'rpm-diagnostic.log');
+    require('node:fs').appendFileSync(file, `${new Date().toISOString()} ${message}\n`);
+  } catch (_) {}
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1460,
@@ -486,7 +498,25 @@ function createWindow() {
       nodeIntegration: false
     }
   });
-  mainWindow.once('ready-to-show', () => mainWindow.show());
+  let shown = false;
+  const showWindow = () => { if (!shown && mainWindow && !mainWindow.isDestroyed()) { shown = true; mainWindow.show(); } };
+  mainWindow.once('ready-to-show', showWindow);
+  // Filet de sécurité : si « ready-to-show » n'arrive pas, la fenêtre s'affiche quand même.
+  mainWindow.webContents.once('did-finish-load', () => setTimeout(showWindow, 1500));
+  setTimeout(showWindow, 5000);
+  // Rendu interrompu ou page bloquée : on recharge l'interface au lieu de laisser un écran gris.
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    logDiagnostic(`render-process-gone : ${details?.reason}`);
+    if (!mainWindow.isDestroyed()) mainWindow.reload();
+  });
+  mainWindow.webContents.on('unresponsive', () => logDiagnostic('page sans réponse'));
+  mainWindow.webContents.on('did-fail-load', (_event, code, description) => {
+    logDiagnostic(`did-fail-load : ${code} ${description}`);
+    if (!mainWindow.isDestroyed()) setTimeout(() => mainWindow.reload(), 500);
+  });
+  mainWindow.webContents.on('console-message', (_event, level, message, line, source) => {
+    if (level >= 3) logDiagnostic(`erreur de page : ${message} (${source}:${line})`);
+  });
   mainWindow.on('close', (event) => {
     if (creationInProgress) {
       event.preventDefault();

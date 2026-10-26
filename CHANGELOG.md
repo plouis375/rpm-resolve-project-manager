@@ -1,5 +1,10 @@
 # Historique des versions
 
+## v0.33.1 — 26 octobre 2026
+
+- **Gestion couleur du projet corrigée** : le projet passe en *DaVinci YRGB Color Managed* (et non plus la v2), avec « Automatic color management » désactivé et le mode de traitement « SDR Rec.709 ». Pour la sortie Rec.709-A, l’espace de sortie est réglé en plus ; Gamma 2.4 correspond déjà au mode SDR Rec.709. L’espace de timeline n’est plus forcé.
+- **Fenêtre grise** : le rendu matériel d’Electron est désactivé (l’interface est légère), la fenêtre s’affiche même si l’événement « prête » n’arrive pas, et un rendu interrompu recharge l’interface. Les incidents d’affichage sont notés dans `rpm-diagnostic.log` (dossier de données du plugin) pour t’aider à les identifier s’il en reste.
+
 ## v0.33.0 — 26 octobre 2026
 
 - **Copie des cartes avec vérification** (étape Sources) : « Copier une carte avec vérification » utilise le Clone Tool de Resolve (`MediaStorage.StartCloneMedia`). Tu choisis la carte, le dossier de destination (et une seconde copie de sauvegarde si tu le souhaites) et le type de vérification (MD5 par défaut, SHA-256, xxHash 64 ou taille seule). L’avancement s’affiche, la copie peut être arrêtée, puis la copie vérifiée est ajoutée aux sources et analysée. La carte d’origine n’est jamais modifiée.

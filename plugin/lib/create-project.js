@@ -7,7 +7,7 @@ const path = require('node:path');
 const fs = require('node:fs/promises');
 const { SEQUENCE, SYNC_AUDIO, FRAME_RATES, cleanText, dominantFormat, nearestFrameRate, matchImported, sortForTimeline } = require('./media');
 const { t } = require('./t');
-const { PROFILES, OUTPUTS, presetFileName, COLOR_MANAGED_MODE, INPUT_COLOR_SPACES, MANAGED_TIMELINE_SPACE, MANAGED_OUTPUT_SPACES } = require('./cst');
+const { PROFILES, OUTPUTS, presetFileName, COLOR_MANAGED_MODE, COLOR_MANAGED_PRESET, INPUT_COLOR_SPACES, MANAGED_OUTPUT_SPACES } = require('./cst');
 
 const DEFAULT_TIMEOUTS = { importMs: 120000, cstMs: 20000, syncMs: 300000 };
 const SYNC_MODES = { timecode: 'Timecode', waveform: 'Forme d’onde' }; // libellés traduits à l’affichage : t(SYNC_MODES[mode])
@@ -137,8 +137,9 @@ async function applyProjectColorManagement(project, output, logger) {
   const outputKey = MANAGED_OUTPUT_SPACES[output] ? output : 'rec709a';
   const wanted = [
     ['colorScienceMode', COLOR_MANAGED_MODE],
-    ['colorSpaceTimeline', MANAGED_TIMELINE_SPACE],
-    ['colorSpaceOutput', MANAGED_OUTPUT_SPACES[outputKey]]
+    ['isAutoColorManage', '0'],
+    ['rcmPresetMode', COLOR_MANAGED_PRESET],
+    ...(outputKey === 'rec709a' ? [['colorSpaceOutput', MANAGED_OUTPUT_SPACES.rec709a]] : [])
   ];
   const refused = [];
   for (const [key, value] of wanted) {

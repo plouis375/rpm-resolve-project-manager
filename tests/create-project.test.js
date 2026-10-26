@@ -271,7 +271,7 @@ test('gestion couleur : mode du projet puis espace d’entrée de chaque clip, s
   const fake = fakeResolve();
   const selected = [file('A001.mov'), file('B001.mov', { cameraBrand: 'Canon', cameraModel: 'C70', colorProfile: 'canon-clog2' }), file('C001.mov', { colorProfile: 'none' }), file('D001.mov', { colorProfile: '' })];
   const result = await run(fake, selected, { ...baseOptions, createTimeline: false, applyCst: true, colorMethod: 'managed', cstOutput: 'gamma24' });
-  assert.deepEqual(fake.state.settings, [['colorScienceMode', 'davinciYRGBColorManagedv2'], ['colorSpaceTimeline', 'DaVinci WG/Intermediate'], ['colorSpaceOutput', 'Rec.709 Gamma 2.4']]);
+  assert.deepEqual(fake.state.settings, [['colorScienceMode', 'davinciYRGBColorManaged'], ['isAutoColorManage', '0'], ['rcmPresetMode', 'SDR Rec.709']]);
   assert.deepEqual(fake.state.inputSpaces, [
     { path: '/src/A001.mov', key: 'Input Color Space', value: 'S-Gamut3.Cine/S-Log3' },
     { path: '/src/B001.mov', key: 'Input Color Space', value: 'Cinema Gamut/Canon Log 2' }

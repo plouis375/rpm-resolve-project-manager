@@ -23,9 +23,10 @@ const MANAGED_ONLY = new Set(['panasonic-vlog', 'fujifilm-flog', 'fujifilm-flog2
 
 const OUTPUTS = { rec709a: 'Rec.709-A', gamma24: 'Gamma 2.4' };
 
-// Gestion couleur du projet (DaVinci YRGB Color Managed v2) : espace d’entrée de chaque clip,
+// Gestion couleur du projet (DaVinci YRGB Color Managed, mode « SDR Rec.709 », sans gestion automatique) : espace d’entrée de chaque clip,
 // tel qu’il est nommé dans l’interface de Resolve (propriété de clip « Input Color Space »).
-const COLOR_MANAGED_MODE = 'davinciYRGBColorManagedv2';
+const COLOR_MANAGED_MODE = 'davinciYRGBColorManaged';
+const COLOR_MANAGED_PRESET = 'SDR Rec.709';
 const INPUT_COLOR_SPACES = {
   'sony-slog3': 'S-Gamut3.Cine/S-Log3',
   'canon-clog2': 'Cinema Gamut/Canon Log 2',
@@ -41,7 +42,7 @@ const INPUT_COLOR_SPACES = {
   'red-log3g10': 'REDWideGamutRGB/Log3G10',
   'bmd-filmgen5': 'Blackmagic Design Wide Gamut Gen 5/Blackmagic Design Film Gen 5'
 };
-const MANAGED_TIMELINE_SPACE = 'DaVinci WG/Intermediate';
+// Le mode « SDR Rec.709 » donne déjà une sortie Rec.709 Gamma 2.4 : seule Rec.709-A demande un réglage de plus.
 const MANAGED_OUTPUT_SPACES = { rec709a: 'Rec.709-A', gamma24: 'Rec.709 Gamma 2.4' };
 
 // Mots entiers : « FX3 » ne doit pas attraper « FX30 ».
@@ -100,4 +101,4 @@ function presetFileName(profile, output) {
   return `${profile}_${output}.drx`;
 }
 
-module.exports = { MANAGED_ONLY, PROFILES, OUTPUTS, COLOR_MANAGED_MODE, INPUT_COLOR_SPACES, MANAGED_TIMELINE_SPACE, MANAGED_OUTPUT_SPACES, profileForCamera, profileFromMetadata, profileFromTransfer, presetFileName };
+module.exports = { MANAGED_ONLY, PROFILES, OUTPUTS, COLOR_MANAGED_MODE, INPUT_COLOR_SPACES, COLOR_MANAGED_PRESET, MANAGED_OUTPUT_SPACES, profileForCamera, profileFromMetadata, profileFromTransfer, presetFileName };
