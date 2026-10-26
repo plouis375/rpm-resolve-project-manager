@@ -1,0 +1,6 @@
+kMDItemAcquisitionMake         = "Canon"
+kMDItemAcquisitionModel        = "EOS C70"
+kMDItemContentCreationDate     = 2026-09-12 08:30:00 +0000
+kMDItemDurationSeconds         = 42.5
+kMDItemPixelHeight             = 2160
+kMDItemPixelWidth              = 4096

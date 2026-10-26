@@ -1,5 +1,9 @@
 # Historique des versions
 
+## v0.31.1 — 26 octobre 2026
+
+- Interne : l’analyse des médias (lecture ffprobe et Spotlight, parcours des dossiers, enrichissement des fichiers, comparaison des doublons par empreinte) est sortie de `main.js` vers `plugin/lib/scan.js` et couverte par des tests avec des sorties ffprobe et mdls enregistrées (`tests/scan.test.js`). Aucun changement de comportement.
+
 ## v0.31.0 — 26 octobre 2026
 
 - **Vérification des mises à jour.** À l’ouverture, le plugin interroge la dernière release GitHub et affiche un bandeau discret sur la première étape si une version plus récente existe. L’appel se fait depuis le processus principal (la politique de sécurité de l’interface reste inchangée), avec un délai de 5 s : hors ligne ou en cas d’erreur, rien ne s’affiche. Le lien ne s’ouvre que sur une page du dépôt du plugin.

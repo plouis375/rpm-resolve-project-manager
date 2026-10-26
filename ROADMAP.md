@@ -79,7 +79,7 @@ Coche chaque point une fois livré, avec la version correspondante.
 
 ## 5. Côté code
 
-- [ ] **Tester le scan** : sortir de `plugin/main.js` la lecture ffprobe et Spotlight, le parcours des dossiers et le hachage des doublons vers `plugin/lib/`, puis les tester avec des sorties ffprobe enregistrées.
+- [x] (v0.31.1) **Tester le scan** : sortir de `plugin/main.js` la lecture ffprobe et Spotlight, le parcours des dossiers et le hachage des doublons vers `plugin/lib/`, puis les tester avec des sorties ffprobe enregistrées.
 - [ ] **CI** : un workflow GitHub Actions qui lance `npm test` à chaque push et à chaque PR (macOS ou Ubuntu, Node 20).
 - [ ] **Version unique** : générer `manifest.xml` et le `vX.Y` de `index.html` depuis `plugin/package.json` dans `build.command`.
 - [ ] **CHANGELOG** : ajouter les dates manquantes (v0.18.2 à v0.19.0).

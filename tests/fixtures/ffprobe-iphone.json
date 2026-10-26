@@ -1,0 +1,7 @@
+{
+  "streams": [
+    { "codec_type": "video", "width": 3840, "height": 2160, "avg_frame_rate": "30000/1001", "r_frame_rate": "30000/1001", "color_transfer": "arib-std-b67", "duration": "12.512000", "tags": { "creation_time": "2026-09-12T08:30:00.000000Z", "timecode": "00:00:00:00" } },
+    { "codec_type": "audio", "duration": "12.512000", "tags": {} }
+  ],
+  "format": { "duration": "12.512000", "tags": { "com.apple.quicktime.make": "Apple", "com.apple.quicktime.model": "iPhone 15 Pro", "com.apple.quicktime.creationdate": "2026-09-12T10:30:00+0200" } }
+}
