@@ -1,5 +1,9 @@
 # Historique des versions
 
+## v0.29.0 — 26 octobre 2026
+
+- **Proxies existants liés automatiquement.** L’analyse repère un sous-dossier `proxy` (celui de Blackmagic Proxy Generator) contenant un fichier du même nom que le rush, avec n’importe quelle extension vidéo. Après l’import, chaque proxy trouvé est associé au plan avec `MediaPoolItem.LinkProxyMedia`. Le rapport indique le nombre de proxies liés, et signale ceux que Resolve refuse. Les dossiers `proxy` restent exclus de la liste des médias.
+
 ## v0.28.0 — 26 octobre 2026
 
 - **Preset de réglages de projet** : à l’étape Organisation, une liste propose tes presets de réglages de projet Resolve (`Project.GetProjectSettingsPresetList`). Le preset choisi est appliqué à la création (`SetProjectSettingsPreset`), avant le format de timeline et la gestion couleur demandés dans l’assistant. La liste n’apparaît que si tu as au moins un preset. Un preset refusé par Resolve est signalé dans le rapport.

@@ -6,6 +6,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { createReadStream } = require('node:fs');
 const WorkflowIntegration = require('./WorkflowIntegration.node');
+const { findProxy } = require('./lib/proxies');
 const { addWatchFolders, isProcessRunning } = require('./proxy-settings');
 const {
   VIDEO, SUPPORTED, SYNC_AUDIO, cleanText, categoryFor, normalizeBrand, normalizeDate, normalizeTime, localDate, localTime,
@@ -246,6 +247,9 @@ async function scanDirectory(root, signal) {
   return filterSidecars(files);
 }
 
+// Liste des sous-dossiers « proxy » déjà lus pendant l’analyse (un seul readdir par dossier).
+const proxyCache = new Map();
+
 async function enrichFile(file, signal) {
   throwIfAborted(signal);
   const stat = await fs.stat(file.filePath);
@@ -290,6 +294,7 @@ async function enrichFile(file, signal) {
     fps: metadata.format?.fps || null,
     cameraBrand: isVideo ? normalizeBrand(rawMake, rawModel) || '' : '',
     cameraModel: isVideo ? rawModel : '',
+    proxyPath: isVideo ? await findProxy(file.filePath, proxyCache) : '',
     captureGamma: isVideo ? metadata.captureGamma || '' : '',
     colorProfile: isVideo ? profileFromMetadata(normalizeBrand(rawMake, rawModel), rawModel, metadata.captureGamma, metadata.colorTransfer) || '' : '',
     // Son direct : date gardée pour synchroniser jour par jour (le timecode se répète d'un jour à l'autre).
@@ -314,6 +319,7 @@ function bestSourceRoot(filePath, roots) {
 }
 
 async function scanSources(event, paths, previousScanId, activePaths, previousFiles, forceRefresh, signal) {
+  proxyCache.clear();
   const roots = [...new Set((activePaths || paths || []).map((item) => path.resolve(item)))];
   const rootRecords = await Promise.all(roots.map(async (sourcePath) => ({
     sourcePath,

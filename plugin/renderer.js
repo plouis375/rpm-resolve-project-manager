@@ -762,6 +762,7 @@ function renderCompletion(result) {
       ? `${synced} / ${days.length} jour(s) · ${mode}${unmatchedAudio ? ` · ${unmatchedAudio} fichier(s) son sans image le même jour` : ''}`
       : audioCount ? 'Aucun jour avec image et son' : 'Aucun son direct importé']);
   }
+  if (result.proxyReport) rows.push(['Proxies existants liés', `${result.proxyReport.linked} / ${result.proxyReport.linked + result.proxyReport.failed.length} plan(s)`]);
   if (result.extraTimelines?.length) rows.push(['Timelines supplémentaires', result.extraTimelines.map((n) => n.split(' — ').pop()).join(' · ')]);
   if (result.colorReport) {
     const { applied, unrecognized, failed, output } = result.colorReport;

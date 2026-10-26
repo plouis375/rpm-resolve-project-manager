@@ -422,6 +422,18 @@ function multicamWarning(report) {
   return failed.length ? `Resolve n’a pas créé le clip multicam pour ${failed.join(', ')}.` : '';
 }
 
+// Associe les proxies déjà générés (sous-dossier « proxy ») à leur rush.
+async function linkProxies({ importedRushes, logger, cstMs }) {
+  const report = { linked: 0, failed: [] };
+  for (const { file, item } of importedRushes) {
+    if (!file.proxyPath) continue;
+    let ok = false;
+    try { ok = Boolean(await withTimeout(item.LinkProxyMedia(file.proxyPath), cstMs)); } catch (error) { warnResolve('LinkProxyMedia', error, logger); }
+    if (ok) report.linked += 1; else report.failed.push(file.name);
+  }
+  return report;
+}
+
 // Couleur stable par caméra (hachage FNV-1a de la marque et du modèle) : la même caméra garde la même couleur d’un projet à l’autre.
 function cameraColor(file) {
   const key = `${cleanText(file.cameraBrand)}|${cleanText(file.cameraModel)}`.toLowerCase();
@@ -561,6 +573,12 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
       if (managedReport.applied) await checkpoint();
     }
 
+    let proxyReport = null;
+    if (imported.importedRushes.some(({ file }) => file.proxyPath)) {
+      proxyReport = await linkProxies({ importedRushes: imported.importedRushes, logger, cstMs });
+      if (proxyReport.linked) await checkpoint();
+    }
+
     let clipColorReport = null;
     if (options.colorClips) {
       clipColorReport = await colorClips({ importedRushes: imported.importedRushes, logger, cstMs });
@@ -595,9 +613,11 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
       multicamReport,
       clipColorReport,
       metadataReport,
+      proxyReport,
       warning: [presetWarning,
         timelineWarning,
         metadataWarning(metadataReport),
+        proxyReport?.failed.length ? `Resolve n’a pas lié le proxy de ${proxyReport.failed.length} plan(s) (${proxyReport.failed.slice(0, 4).join(', ')}${proxyReport.failed.length > 4 ? '…' : ''}).` : '',
         clipColorReport?.failed ? `Resolve n’a pas appliqué la couleur de clip à ${clipColorReport.failed} plan(s).` : '',
         syncWarning(syncReport),
         multicamWarning(multicamReport),

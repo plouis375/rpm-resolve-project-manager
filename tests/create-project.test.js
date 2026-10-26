@@ -9,7 +9,7 @@ const FOLDERS = [{ id: 'Rushs', name: 'Rushs' }, { id: 'Exports', name: 'Exports
 
 // Faux Resolve : chutiers, imports, timelines et CST, avec compteurs pour les assertions.
 function fakeResolve(overrides = {}) {
-  const state = { saves: 0, timelines: [], imported: [], grades: [], syncs: [], multicams: [], colors: [], metadata: [], settings: [], inputSpaces: [], presets: [], calls: [], existing: overrides.existing || [] };
+  const state = { saves: 0, timelines: [], imported: [], grades: [], syncs: [], multicams: [], colors: [], metadata: [], settings: [], inputSpaces: [], presets: [], calls: [], proxies: [], existing: overrides.existing || [] };
   const makeFolder = (name) => {
     const children = [];
     return { name, children, GetName: async () => name, GetSubFolderList: async () => children };
@@ -36,7 +36,7 @@ function fakeResolve(overrides = {}) {
     SetCurrentFolder: async (folder) => { state.current = folder; return true; },
     ImportMedia: overrides.importMedia || (async (paths) => {
       state.imported.push({ folder: state.current.name, paths });
-      return paths.map((p) => ({ path: p, GetClipProperty: async () => p, SetClipProperty: async (key, value) => { const ok = overrides.setClipProperty ? overrides.setClipProperty(p) : true; if (ok) state.inputSpaces.push({ path: p, key, value }); return ok; }, SetMetadata: async (data) => { const [key] = Object.keys(data); const ok = overrides.setMetadata ? overrides.setMetadata(key) : true; if (ok) state.metadata.push({ path: p, ...data }); return ok; }, SetClipColor: async (color) => { state.colors.push({ path: p, color }); return overrides.setClipColor ? overrides.setClipColor(color) : true; } }));
+      return paths.map((p) => ({ path: p, GetClipProperty: async () => p, LinkProxyMedia: async (proxy) => { const ok = overrides.linkProxy ? overrides.linkProxy(p) : true; if (ok) state.proxies.push({ path: p, proxy }); return ok; }, SetClipProperty: async (key, value) => { const ok = overrides.setClipProperty ? overrides.setClipProperty(p) : true; if (ok) state.inputSpaces.push({ path: p, key, value }); return ok; }, SetMetadata: async (data) => { const [key] = Object.keys(data); const ok = overrides.setMetadata ? overrides.setMetadata(key) : true; if (ok) state.metadata.push({ path: p, ...data }); return ok; }, SetClipColor: async (color) => { state.colors.push({ path: p, color }); return overrides.setClipColor ? overrides.setClipColor(color) : true; } }));
     }),
     ImportTimelineFromFile: async () => ({}),
     AutoSyncAudio: overrides.autoSyncAudio || (async (items, settings) => { state.syncs.push({ paths: items.map((i) => i.path), settings }); return true; }),
@@ -316,4 +316,18 @@ test('sans preset choisi, aucun preset n’est appliqué', async () => {
   const fake = fakeResolve();
   await run(fake, [file('A001.mov')], { ...baseOptions, applyCst: false, settingsPreset: '' });
   assert.equal(fake.state.presets.length, 0);
+});
+
+test('lie les proxies existants et compte ceux que Resolve refuse', async () => {
+  const fake = fakeResolve({ linkProxy: (p) => p !== '/src/A002.mov' });
+  const selected = [file('A001.mov', { proxyPath: '/src/proxy/A001.mov' }), file('A002.mov', { proxyPath: '/src/proxy/A002.mov' }), file('A003.mov')];
+  const result = await run(fake, selected, { ...baseOptions, createTimeline: false, applyCst: false });
+  assert.deepEqual(fake.state.proxies, [{ path: '/src/A001.mov', proxy: '/src/proxy/A001.mov' }]);
+  assert.deepEqual(result.proxyReport, { linked: 1, failed: ['A002.mov'] });
+  assert.match(result.warning, /pas lié le proxy de 1 plan/);
+});
+
+test('sans proxy existant, aucun rapport de proxies', async () => {
+  const result = await run(fakeResolve(), [file('A001.mov')], { ...baseOptions, createTimeline: false, applyCst: false });
+  assert.equal(result.proxyReport, null);
 });

@@ -202,6 +202,10 @@ Avec **Écrire les métadonnées des rushs**, chaque rush reçoit dans Resolve :
 
 Si tu as enregistré des presets de réglages de projet dans Resolve, une liste les propose à l’étape Organisation. Le preset est appliqué au projet créé, avant le format de timeline et la gestion couleur choisis dans l’assistant, qui gardent donc le dernier mot.
 
+## 🔗 Proxies existants
+
+Si un rush a déjà un proxy dans un sous-dossier `proxy` voisin (même nom de fichier, extension vidéo quelconque), il est lié automatiquement au plan après l’import. Le rapport final compte les proxies liés. Cela évite de régénérer des proxies déjà faits.
+
 <a id="cst"></a>
 
 ## 🎨 Color Space Transform
