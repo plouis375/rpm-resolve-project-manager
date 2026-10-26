@@ -455,32 +455,6 @@ async function colorClips({ importedRushes, logger, cstMs }) {
   return report;
 }
 
-// Écrit les métadonnées standard de Resolve, une clé à la fois : celles que Resolve refuse sont comptées et signalées.
-async function writeMetadata({ importedRushes, logger, cstMs }) {
-  const report = { clips: 0, refused: {} };
-  const cameras = [...new Set(importedRushes.map(({ file }) => `${cleanText(file.cameraBrand)} ${cleanText(file.cameraModel)}`.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }));
-  for (const { file, item } of importedRushes) {
-    const camera = `${cleanText(file.cameraBrand)} ${cleanText(file.cameraModel)}`.trim();
-    const values = {};
-    if (camera) { values['Camera Type'] = camera; values['Camera #'] = String(cameras.indexOf(camera) + 1); }
-    if (DATE_PATTERN.test(file.shootingDate || '')) values['Date Recorded'] = file.shootingDate;
-    if (file.filePath) values.Description = path.dirname(file.filePath);
-    let written = 0;
-    for (const [key, value] of Object.entries(values)) {
-      let ok = false;
-      try { ok = Boolean(await withTimeout(item.SetMetadata({ [key]: value }), cstMs)); } catch (error) { warnResolve(`SetMetadata ${key}`, error, logger); }
-      if (ok) written += 1; else report.refused[key] = (report.refused[key] || 0) + 1;
-    }
-    if (written) report.clips += 1;
-  }
-  return report;
-}
-
-function metadataWarning(report) {
-  const keys = Object.keys(report?.refused || {});
-  return keys.length ? t('Resolve a refusé des métadonnées : {list}.', { list: keys.map((key) => t('« {key} » ({n} plan(s))', { key, n: report.refused[key] })).join(', ') }) : '';
-}
-
 function syncWarning(report) {
   if (!report) return '';
   if (report.unavailable) return t('Synchro du son impossible : cette version de Resolve n’expose pas la synchro par forme d’onde. Essaie le timecode.');
@@ -561,12 +535,6 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
       if (syncReport.days.some((day) => day.ok)) await checkpoint();
     }
 
-    let metadataReport = null;
-    if (options.writeMetadata) {
-      metadataReport = await writeMetadata({ importedRushes: imported.importedRushes, logger, cstMs });
-      if (metadataReport.clips) await checkpoint();
-    }
-
     let managedReport = null;
     if (managed) {
       managedReport = await applyInputColorSpaces({ importedRushes: imported.importedRushes, logger, cstMs });
@@ -621,11 +589,9 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
       syncReport,
       multicamReport,
       clipColorReport,
-      metadataReport,
       proxyReport,
       warning: [presetWarning,
         timelineWarning,
-        metadataWarning(metadataReport),
         proxyReport?.failed.length ? t('Resolve n’a pas lié le proxy de {n} plan(s) ({names}).', { n: proxyReport.failed.length, names: `${proxyReport.failed.slice(0, 4).join(', ')}${proxyReport.failed.length > 4 ? '…' : ''}` }) : '',
         clipColorReport?.failed ? t('Resolve n’a pas appliqué la couleur de clip à {n} plan(s).', { n: clipColorReport.failed }) : '',
         syncWarning(syncReport),

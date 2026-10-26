@@ -45,7 +45,6 @@ function reportRows(result) {
     rows.push([t('Proxies'), t('Liés'), t('{n} plan(s)', { n: result.proxyReport.linked })]);
     for (const name of result.proxyReport.failed) rows.push([t('Proxies'), refused, name]);
   }
-  if (result.metadataReport) for (const [key, count] of Object.entries(result.metadataReport.refused)) rows.push([t('Métadonnées'), refused, t('{key} · {n} plan(s)', { key, n: count })]);
   if (result.clipColorReport?.failed) rows.push([t('Couleur de clip'), refused, t('{n} plan(s)', { n: result.clipColorReport.failed })]);
   for (const message of result.resolveWarnings || []) rows.push(['Resolve', t('Avertissement'), message]);
   return rows;

@@ -204,10 +204,6 @@ With **Create one multicam clip per day**, each shooting day with at least two r
 
 With **Color clips by camera**, each rush gets a Resolve clip color based on its camera. The color only depends on brand and model: an FX3 keeps the same color from one project to the next. Two cameras can end up with the same color, since Resolve only offers 16.
 
-## 🏷️ Rush metadata
-
-With **Write rush metadata**, each rush gets in Resolve: **Camera Type** (brand and model), **Camera #** (number per camera), **Date Recorded** (shooting day) and **Description** (source folder). You can then filter the Media Pool or create smart bins. Fields Resolve refuses are listed in the final report. The color profile is not written: Resolve has no standard field for it.
-
 ## 🎛️ Project color management
 
 Next to the CST node, the **Project color management** method switches the project to *DaVinci YRGB Color Managed* (automatic color management on, SDR mode, SDR Rec.709 output) and sets each clip's input color space from its color profile. It is almost instant, applies to every timeline and does not require creating one. Clips or settings Resolve refuses are listed in the report.

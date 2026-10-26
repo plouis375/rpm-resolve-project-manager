@@ -1,5 +1,9 @@
 # Historique des versions
 
+## v0.33.4 — 26 octobre 2026
+
+- **Option « Écrire les métadonnées des rushs » retirée** (ajoutée en v0.23.0) : le plugin n’écrit plus rien dans les métadonnées des clips Resolve. Les autres options restent inchangées.
+
 ## v0.33.3 — 26 octobre 2026
 
 - **Correctif d’affichage** : l’en-tête et la barre d’étapes pouvaient remonter hors de la fenêtre, laissant un écran gris. Un élément en « overflow: hidden » reste défilable par programme (focus d’une case, sélection) ; le cadre de l’application utilise désormais « overflow: clip », qui l’interdit, avec un garde-fou qui remet le défilement à zéro.

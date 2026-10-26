@@ -53,7 +53,7 @@
           <div class="bin-list" id="binPreview"></div>
         </div>
         <div class="view-footer">
-          <div class="connection-wrap"><span class="muted" id="connectionState">Connexion à Resolve…</span><button class="button secondary compact" id="retryConnection" hidden>Reconnecter</button><span class="app-meta">v0.33.3 · <button class="link-button" id="uninstallPlugin" type="button">Désinstaller</button></span></div>
+          <div class="connection-wrap"><span class="muted" id="connectionState">Connexion à Resolve…</span><button class="button secondary compact" id="retryConnection" hidden>Reconnecter</button><span class="app-meta">v0.33.4 · <button class="link-button" id="uninstallPlugin" type="button">Désinstaller</button></span></div>
           <button class="button primary" id="toSources" disabled>Continuer</button>
         </div>
       </section>
@@ -242,11 +242,6 @@
             </select></label>
             <p class="timeline-note">Le timecode est rapide et fiable si les appareils ont été synchronisés au tournage. La forme d’onde compare le son caméra au son direct : plus lente, elle demande un son témoin audible.</p>
           </div>
-          <label class="option-row">
-            <span class="option-check"><input id="writeMetadata" type="checkbox"><span class="checkmark"></span></span>
-            <span class="option-copy"><strong>Écrire les métadonnées des rushs</strong><span>Renseigne dans Resolve « Camera Type », « Camera # » (numéro par caméra), « Date Recorded » et « Description » (dossier source). Le Media Pool devient filtrable et on peut créer des smart bins. Le rapport signale les champs que Resolve refuse.</span></span>
-            <span class="option-state">Optionnel</span>
-          </label>
           <label class="option-row">
             <span class="option-check"><input id="colorClips" type="checkbox"><span class="checkmark"></span></span>
             <span class="option-copy"><strong>Colorer les clips par caméra</strong><span>Chaque rush reçoit une couleur de clip Resolve selon sa caméra (marque et modèle). La couleur est stable d’un projet à l’autre, et sert à repérer les caméras dans le Media Pool et les timelines.</span></span>
