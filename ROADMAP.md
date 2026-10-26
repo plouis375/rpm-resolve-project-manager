@@ -30,7 +30,7 @@ Coche chaque point une fois livré, avec la version correspondante.
 - Lister les clés de métadonnées valides dans la doc avant de les écrire.
 
 ### 1.3 Chutier « Son » pour le son direct
-- [ ] Aujourd'hui les WAV et AIFF vont dans « Musiques ». Ajouter un chutier de base « Son » et y classer par défaut les formats d'enregistreur (`SYNC_AUDIO` dans `plugin/lib/media.js`). Les MP3, AAC et autres restent dans Musiques.
+- [x] (v0.24.0) Aujourd'hui les WAV et AIFF vont dans « Musiques ». Ajouter un chutier de base « Son » et y classer par défaut les formats d'enregistreur (`SYNC_AUDIO` dans `plugin/lib/media.js`). Les MP3, AAC et autres restent dans Musiques.
 - Rendre la date des fichiers son modifiable à l'étape Sources : elle sert à la synchro jour par jour.
 
 ## 2. Couleur

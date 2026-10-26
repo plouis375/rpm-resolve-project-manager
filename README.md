@@ -145,6 +145,7 @@ Nom du projet
 │   └── Marque de caméra
 │       └── Modèle
 │           └── Date de tournage
+├── Son
 ├── Assets
 ├── Éléments
 ├── Séquences
@@ -179,7 +180,7 @@ Avec **Synchroniser le son enregistré à part**, Resolve associe les fichiers *
 | **Timecode** | enregistreur et caméras calés sur le même timecode au tournage |
 | **Forme d’onde** | pas de timecode commun, mais un son témoin audible sur les caméras |
 
-Le son caméra est conservé, et les timelines d’assemblage reprennent le son synchronisé. La synchro se fait jour par jour, car un timecode « heure du jour » se répète d’un jour à l’autre. La date d’un fichier son vient de ses métadonnées BWF, sinon de sa date de création. Le rapport final liste les jours que Resolve n’a pas confirmés.
+Le son caméra est conservé, et les timelines d’assemblage reprennent le son synchronisé. La synchro se fait jour par jour, car un timecode « heure du jour » se répète d’un jour à l’autre. La date d’un fichier son vient de ses métadonnées BWF, sinon de sa date de création. Elle se corrige à l’étape Sources, et les WAV et AIFF vont par défaut dans le chutier **Son** (les MP3 et autres restent dans Musiques). Le rapport final liste les jours que Resolve n’a pas confirmés.
 
 ## 🎬 Clips multicam
 

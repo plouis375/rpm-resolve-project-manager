@@ -16,7 +16,7 @@ const { createProjectInResolve, safeBinName } = require('./lib/create-project');
 
 const execFileAsync = promisify(execFile);
 const PLUGIN_ID = 'com.idolatry.resolveprojectcreationtool';
-const BIN_NAMES = ['Rushs', 'Assets', 'Éléments', 'Séquences', 'Musiques', 'Exports'];
+const BIN_NAMES = ['Rushs', 'Son', 'Assets', 'Éléments', 'Séquences', 'Musiques', 'Exports'];
 const PROBE_PATHS = ['/opt/homebrew/bin/ffprobe', '/usr/local/bin/ffprobe', '/usr/bin/ffprobe'];
 const PROXY_GENERATOR_APP = '/Applications/Blackmagic Proxy Generator.app';
 const PROXY_GENERATOR_EXECUTABLE = `${PROXY_GENERATOR_APP}/Contents/MacOS/Blackmagic Proxy Generator`;

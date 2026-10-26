@@ -28,7 +28,7 @@ The product combines Resolve project setup, guided media classification, and cam
 - Resolve registers the integration under its Workflow Integrations submenu. V1 does not replace or add a choice inside Resolve's native New Project dialog; the user opens the setup assistant from the Workspace menu.
 - Example project: “Campagne Nike 2026”.
 - Source media stays at its original Finder locations. The product does not create Finder folder structures or copy source media automatically.
-- Media Pool bins: Rushs, Assets, Éléments, Séquences, Musiques, Exports.
+- Media Pool bins: Rushs, Son, Assets, Éléments, Séquences, Musiques, Exports.
 
 ## Capabilities and Constraints
 

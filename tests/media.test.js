@@ -103,3 +103,10 @@ test('sortForTimeline : jour, puis timecode ou heure, puis nom', () => {
   const wrapped = m.sortForTimeline(files.map((file) => ({ file })), 'timecode', (entry) => entry.file);
   assert.equal(wrapped[0].file.name, 'A_C70.MXF');
 });
+
+test('categoryFor : le son d’enregistreur va dans Son, les autres formats dans Musiques', () => {
+  assert.equal(m.categoryFor('.wav'), 'Son');
+  assert.equal(m.categoryFor('.aiff'), 'Son');
+  assert.equal(m.categoryFor('.mp3'), 'Musiques');
+  assert.equal(m.categoryFor('.mov'), 'Rushs');
+});

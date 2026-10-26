@@ -1,4 +1,4 @@
-const DEFAULT_FOLDERS = ['Rushs', 'Assets', 'Éléments', 'Séquences', 'Musiques', 'Exports'].map((name) => ({ id: name, name, core: true }));
+const DEFAULT_FOLDERS = ['Rushs', 'Son', 'Assets', 'Éléments', 'Séquences', 'Musiques', 'Exports'].map((name) => ({ id: name, name, core: true }));
 const PAGE_SIZE = 160;
 const state = {
   step: 1,
@@ -48,7 +48,7 @@ function durationLabel(seconds) {
 }
 
 function categoryColor(category) {
-  return category === 'Rushs' ? 'MOV' : category === 'Musiques' ? 'AUD' : category === 'Séquences' ? 'SEQ' : 'IMG';
+  return category === 'Rushs' ? 'MOV' : category === 'Musiques' || category === 'Son' ? 'AUD' : category === 'Séquences' ? 'SEQ' : 'IMG';
 }
 
 function destinationText(file) {
@@ -241,6 +241,11 @@ function applyCameraMerge(suggestion) {
 function renderProjectPreview() {
   renderStructurePreview();
   renderCameraSuggestions();
+}
+
+// Fichiers d’enregistreur (WAV, AIFF) : leur date sert à la synchro du son jour par jour.
+function isSyncAudioFile(file) {
+  return /\.(wav|aiff?)$/i.test(file.name || '');
 }
 
 function matchesBaseBins() {
@@ -467,7 +472,9 @@ function renderTable() {
       const badges = reviewReasons(file).map((reason) => `<span class="review-mark ${reason.id}-mark">${escapeHTML(reason.label)}</span>`).join('');
       const destination = file.category === 'Rushs'
         ? `<div class="destination-edit"><input data-edit="cameraBrand" data-file="${file.id}" value="${escapeHTML(file.cameraBrand)}" placeholder="Marque" aria-label="Marque de caméra pour ${escapeHTML(file.name)}"><input data-edit="cameraModel" data-file="${file.id}" value="${escapeHTML(file.cameraModel)}" placeholder="Modèle" aria-label="Modèle de caméra pour ${escapeHTML(file.name)}"><input type="date" data-edit="shootingDate" data-file="${file.id}" value="${escapeHTML(file.shootingDate)}" aria-label="Date de tournage pour ${escapeHTML(file.name)}"></div>`
-        : `<span class="destination-path" title="${escapeHTML(folderName(file.category))}">${escapeHTML(folderName(file.category))}</span>`;
+        : isSyncAudioFile(file)
+          ? `<div class="destination-edit"><span class="destination-path" title="${escapeHTML(folderName(file.category))}">${escapeHTML(folderName(file.category))}</span><input type="date" data-edit="shootingDate" data-file="${file.id}" value="${escapeHTML(/^\d{4}-\d{2}-\d{2}$/.test(file.shootingDate || '') ? file.shootingDate : '')}" title="Date du son direct, utilisée pour la synchro jour par jour" aria-label="Date du son pour ${escapeHTML(file.name)}"></div>`
+          : `<span class="destination-path" title="${escapeHTML(folderName(file.category))}">${escapeHTML(folderName(file.category))}</span>`;
       const profileCell = file.category === 'Rushs'
         ? `<select class="type-select profile-select${file.colorProfile ? '' : ' profile-unknown'}" data-profile="${file.id}" aria-label="Profil couleur de ${escapeHTML(file.name)}" title="${file.colorProfileManual ? 'Choisi à la main' : 'Détecté automatiquement'}">${COLOR_PROFILES.map(([value, label]) => `<option value="${value}"${(file.colorProfile || '') === value ? ' selected' : ''}>${escapeHTML(label)}</option>`).join('')}</select>`
         : '<span class="profile-none">—</span>';
@@ -608,11 +615,13 @@ async function scanSelectedSources(pathsToScan = state.sourcePaths, previousStat
     state.scanId = result.scanId;
     const previousFiles = new Map((previousState?.files || []).map((file) => [file.id, file]));
     const fallbackCategory = state.folders.find((folder) => folder.id === 'Assets')?.id || state.folders[0]?.id || '';
+    // Une structure préférée enregistrée avant le chutier « Son » n’en a pas : le son direct retombe dans Musiques.
+    const audioFallback = state.folders.find((folder) => folder.id === 'Musiques')?.id || fallbackCategory;
     state.files = result.files.map((file) => {
       const old = previousFiles.get(file.id);
       const category = old && state.folders.some((folder) => folder.id === old.category)
         ? old.category
-        : state.folders.some((folder) => folder.id === file.category) ? file.category : fallbackCategory;
+        : state.folders.some((folder) => folder.id === file.category) ? file.category : file.category === 'Son' ? audioFallback : fallbackCategory;
       return old ? {
         ...file,
         category,

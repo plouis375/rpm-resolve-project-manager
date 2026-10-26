@@ -18,6 +18,7 @@ function cleanText(value) {
 
 function categoryFor(extension) {
   if (VIDEO.has(extension)) return 'Rushs';
+  if (SYNC_AUDIO.has(extension)) return 'Son';
   if (AUDIO.has(extension)) return 'Musiques';
   if (SEQUENCE.has(extension)) return 'Séquences';
   if (GRAPHIC.has(extension)) return 'Assets';
