@@ -1,5 +1,9 @@
 # Historique des versions
 
+## v0.23.0 — 26 octobre 2026
+
+- **Métadonnées des rushs dans Resolve** (option de l’étape Organisation) : « Camera Type » (marque et modèle), « Camera # » (numéro par caméra, dans l’ordre alphabétique), « Date Recorded » (jour de tournage) et « Description » (dossier source), écrits avec `MediaPoolItem.SetMetadata`. Le Media Pool devient filtrable et permet des smart bins. Les clés sont écrites une à une : celles que Resolve refuse sont comptées dans l’avertissement final.
+
 ## v0.22.0 — 26 octobre 2026
 
 - **Couleur de clip par caméra** (option de l’étape Organisation) : chaque rush reçoit une couleur de clip Resolve (`MediaPoolItem.SetClipColor`) selon sa marque et son modèle. La couleur est calculée à partir du nom de la caméra : elle reste la même d’un projet à l’autre. Les rushs sans caméra identifiée ne sont pas colorés.

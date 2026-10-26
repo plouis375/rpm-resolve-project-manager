@@ -189,6 +189,10 @@ Avec **Créer un clip multicam par jour**, chaque jour de tournage qui compte au
 
 Avec **Colorer les clips par caméra**, chaque rush reçoit une couleur de clip Resolve selon sa caméra. La couleur ne dépend que de la marque et du modèle : un FX3 garde la même couleur d’un projet à l’autre. Deux caméras peuvent tomber sur la même couleur, car Resolve n’en propose que 16.
 
+## 🏷️ Métadonnées des rushs
+
+Avec **Écrire les métadonnées des rushs**, chaque rush reçoit dans Resolve : **Camera Type** (marque et modèle), **Camera #** (numéro par caméra), **Date Recorded** (jour de tournage) et **Description** (dossier source). Tu peux alors filtrer le Media Pool ou créer des smart bins. Les champs que Resolve refuse sont listés dans le rapport final. Le profil couleur n’est pas écrit : Resolve n’a pas de champ standard pour lui.
+
 <a id="cst"></a>
 
 ## 🎨 Color Space Transform

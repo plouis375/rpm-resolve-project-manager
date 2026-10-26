@@ -787,6 +787,7 @@ async function createProjectNow() {
       syncMode: $('syncMode').value,
       createMulticam: $('createMulticam').checked,
       colorClips: $('colorClips').checked,
+      writeMetadata: $('writeMetadata').checked,
       folders: state.folders.map(({ id, name }) => ({ id, name })),
       files: state.files.map(({ id, category, cameraBrand, cameraModel, shootingDate, colorProfile, include }) => ({ id, category, cameraBrand, cameraModel, shootingDate, colorProfile: colorProfile || '', include }))
     });
@@ -891,6 +892,10 @@ $('createMulticam').addEventListener('change', (event) => {
 });
 try { $('createMulticam').checked = localStorage.getItem('rpm.createMulticam') === '1'; } catch (_) {}
 updateSyncControls();
+$('writeMetadata').addEventListener('change', (event) => {
+  try { localStorage.setItem('rpm.writeMetadata', event.target.checked ? '1' : '0'); } catch (_) {}
+});
+try { $('writeMetadata').checked = localStorage.getItem('rpm.writeMetadata') === '1'; } catch (_) {}
 $('colorClips').addEventListener('change', (event) => {
   try { localStorage.setItem('rpm.colorClips', event.target.checked ? '1' : '0'); } catch (_) {}
 });

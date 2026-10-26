@@ -9,7 +9,7 @@ const FOLDERS = [{ id: 'Rushs', name: 'Rushs' }, { id: 'Exports', name: 'Exports
 
 // Faux Resolve : chutiers, imports, timelines et CST, avec compteurs pour les assertions.
 function fakeResolve(overrides = {}) {
-  const state = { saves: 0, timelines: [], imported: [], grades: [], syncs: [], multicams: [], colors: [], existing: overrides.existing || [] };
+  const state = { saves: 0, timelines: [], imported: [], grades: [], syncs: [], multicams: [], colors: [], metadata: [], existing: overrides.existing || [] };
   const makeFolder = (name) => {
     const children = [];
     return { name, children, GetName: async () => name, GetSubFolderList: async () => children };
@@ -36,7 +36,7 @@ function fakeResolve(overrides = {}) {
     SetCurrentFolder: async (folder) => { state.current = folder; return true; },
     ImportMedia: overrides.importMedia || (async (paths) => {
       state.imported.push({ folder: state.current.name, paths });
-      return paths.map((p) => ({ path: p, GetClipProperty: async () => p, SetClipColor: async (color) => { state.colors.push({ path: p, color }); return overrides.setClipColor ? overrides.setClipColor(color) : true; } }));
+      return paths.map((p) => ({ path: p, GetClipProperty: async () => p, SetMetadata: async (data) => { const [key] = Object.keys(data); const ok = overrides.setMetadata ? overrides.setMetadata(key) : true; if (ok) state.metadata.push({ path: p, ...data }); return ok; }, SetClipColor: async (color) => { state.colors.push({ path: p, color }); return overrides.setClipColor ? overrides.setClipColor(color) : true; } }));
     }),
     ImportTimelineFromFile: async () => ({}),
     AutoSyncAudio: overrides.autoSyncAudio || (async (items, settings) => { state.syncs.push({ paths: items.map((i) => i.path), settings }); return true; }),
@@ -245,4 +245,23 @@ test('une couleur refusée par Resolve est signalée sans bloquer la création',
   const result = await run(fake, [file('A001.mov')], { ...baseOptions, applyCst: false, colorClips: true });
   assert.equal(result.ok, true);
   assert.match(result.warning, /couleur de clip à 1 plan/);
+});
+
+test('écrit les métadonnées standard de chaque rush', async () => {
+  const fake = fakeResolve();
+  const selected = [file('A001.mov'), file('B001.mov', { cameraModel: 'FX6', shootingDate: '2026-09-13' })];
+  const result = await run(fake, selected, { ...baseOptions, createTimeline: false, applyCst: false, writeMetadata: true });
+  const of = (path) => Object.assign({}, ...fake.state.metadata.filter((m) => m.path === path).map(({ path: _, ...rest }) => rest));
+  assert.deepEqual(of('/src/A001.mov'), { 'Camera Type': 'Sony FX3', 'Camera #': '1', 'Date Recorded': '2026-09-12', Description: '/src' });
+  assert.equal(of('/src/B001.mov')['Camera #'], '2');
+  assert.equal(result.metadataReport.clips, 2);
+  assert.equal(result.warning, '');
+});
+
+test('les métadonnées refusées par Resolve sont signalées', async () => {
+  const fake = fakeResolve({ setMetadata: (key) => key !== 'Camera #' });
+  const result = await run(fake, [file('A001.mov')], { ...baseOptions, applyCst: false, writeMetadata: true });
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.metadataReport.refused, { 'Camera #': 1 });
+  assert.match(result.warning, /« Camera # » \(1 plan/);
 });
