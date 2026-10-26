@@ -210,7 +210,7 @@ With **Write rush metadata**, each rush gets in Resolve: **Camera Type** (brand 
 
 ## 🎛️ Project color management
 
-Next to the CST node, the **Project color management** method switches the project to *DaVinci YRGB Color Managed* (“SDR Rec.709” mode, automatic color management off, Rec.709-A or Gamma 2.4 output) and sets each clip's input color space from its color profile. It is almost instant, applies to every timeline and does not require creating one. Clips or settings Resolve refuses are listed in the report.
+Next to the CST node, the **Project color management** method switches the project to *DaVinci YRGB Color Managed* (automatic color management on, SDR mode, SDR Rec.709 output) and sets each clip's input color space from its color profile. It is almost instant, applies to every timeline and does not require creating one. Clips or settings Resolve refuses are listed in the report.
 
 ## ⚙️ Project settings preset
 

@@ -7,7 +7,7 @@ const path = require('node:path');
 const fs = require('node:fs/promises');
 const { SEQUENCE, SYNC_AUDIO, FRAME_RATES, cleanText, dominantFormat, nearestFrameRate, matchImported, sortForTimeline } = require('./media');
 const { t } = require('./t');
-const { PROFILES, OUTPUTS, presetFileName, COLOR_MANAGED_MODE, COLOR_MANAGED_PRESET, INPUT_COLOR_SPACES, MANAGED_OUTPUT_SPACES } = require('./cst');
+const { PROFILES, OUTPUTS, presetFileName, COLOR_MANAGED_MODE, COLOR_MANAGED_PRESET, INPUT_COLOR_SPACES, MANAGED_OUTPUT_LABEL } = require('./cst');
 
 const DEFAULT_TIMEOUTS = { importMs: 120000, cstMs: 20000, syncMs: 300000 };
 const SYNC_MODES = { timecode: 'Timecode', waveform: 'Forme d’onde' }; // libellés traduits à l’affichage : t(SYNC_MODES[mode])
@@ -134,12 +134,10 @@ async function applyColorTransforms({ project, timeline, importedRushes, output,
 // Gestion couleur du projet : règle le mode, l’espace de la timeline et la sortie (avant l’import),
 // puis l’espace d’entrée de chaque clip (après l’import). Ne dépend pas de la création d’une timeline.
 async function applyProjectColorManagement(project, output, logger) {
-  const outputKey = MANAGED_OUTPUT_SPACES[output] ? output : 'rec709a';
   const wanted = [
     ['colorScienceMode', COLOR_MANAGED_MODE],
-    ['isAutoColorManage', '0'],
-    ['rcmPresetMode', COLOR_MANAGED_PRESET],
-    ...(outputKey === 'rec709a' ? [['colorSpaceOutput', MANAGED_OUTPUT_SPACES.rec709a]] : [])
+    ['isAutoColorManage', '1'],
+    ['rcmPresetMode', COLOR_MANAGED_PRESET]
   ];
   const refused = [];
   for (const [key, value] of wanted) {
@@ -147,7 +145,7 @@ async function applyProjectColorManagement(project, output, logger) {
     try { ok = Boolean(await project.SetSetting(key, value)); } catch (error) { warnResolve(`SetSetting ${key}`, error, logger); }
     if (!ok) refused.push(key);
   }
-  return { refusedSettings: refused, output: OUTPUTS[outputKey] };
+  return { refusedSettings: refused, output: MANAGED_OUTPUT_LABEL };
 }
 
 async function applyInputColorSpaces({ importedRushes, logger, cstMs }) {

@@ -101,7 +101,7 @@
     'Méthode': 'Method',
     'Node CST sur chaque plan de la timeline (.drx)': 'CST node on each timeline shot (.drx)',
     'Gestion couleur du projet (DaVinci YRGB Color Managed)': 'Project color management (DaVinci YRGB Color Managed)',
-    'Passe le projet en DaVinci YRGB Color Managed (mode « SDR Rec.709 », sans gestion automatique) et règle l’espace d’entrée de chaque clip selon sa colonne « Profil couleur ». Presque instantané, et indépendant de la création d’une timeline.': 'Switches the project to DaVinci YRGB Color Managed (“SDR Rec.709” mode, automatic color management off) and sets each clip’s input color space from its “Color profile” column. Almost instant, and independent of timeline creation.',
+    'Passe le projet en DaVinci YRGB Color Managed (gestion automatique activée, mode SDR, sortie SDR Rec.709) et règle l’espace d’entrée de chaque clip selon sa colonne « Profil couleur ». Presque instantané, et indépendant de la création d’une timeline.': 'Switches the project to DaVinci YRGB Color Managed (automatic color management on, SDR mode, SDR Rec.709 output) and sets each clip’s input color space from its “Color profile” column. Almost instant, and independent of timeline creation.',
     'Sortie': 'Output',
     'Rec.709-A · visionnage sur Mac': 'Rec.709-A · viewing on Mac',
     'Rec.709 Gamma 2.4 · diffusion': 'Rec.709 Gamma 2.4 · broadcast',

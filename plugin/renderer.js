@@ -977,7 +977,7 @@ $('createTimeline').addEventListener('change', (event) => {
 });
 const updateColorControls = () => {
   const on = $('applyCst').checked;
-  $('cstOutputField').hidden = !on;
+  $('cstOutputField').hidden = !on || $('colorMethod').value === 'managed';
   $('cstMethodField').hidden = !on;
   $('colorMethodNote').hidden = !(on && $('colorMethod').value === 'managed');
 };

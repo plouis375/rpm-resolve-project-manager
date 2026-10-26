@@ -1,5 +1,9 @@
 # Historique des versions
 
+## v0.33.2 — 26 octobre 2026
+
+- **Gestion couleur du projet, réglages définitifs** : DaVinci YRGB Color Managed avec « Automatic color management » activé, mode de traitement SDR et espace de sortie SDR Rec.709 (réglages `isAutoColorManage` = 1 et `rcmPresetMode` = SDR). Le choix de sortie Rec.709-A / Gamma 2.4 ne s’applique plus à cette méthode (il reste pour le node CST). La case « Enable OpenFX Color Management » n’a pas de réglage documenté dans l’API : elle n’est pas touchée.
+
 ## v0.33.1 — 26 octobre 2026
 
 - **Gestion couleur du projet corrigée** : le projet passe en *DaVinci YRGB Color Managed* (et non plus la v2), avec « Automatic color management » désactivé et le mode de traitement « SDR Rec.709 ». Pour la sortie Rec.709-A, l’espace de sortie est réglé en plus ; Gamma 2.4 correspond déjà au mode SDR Rec.709. L’espace de timeline n’est plus forcé.
