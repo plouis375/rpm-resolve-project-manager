@@ -26,10 +26,11 @@ test('filterSidecars : Canon et Sony', () => {
 });
 
 test('parseSidecarXml : Canon, Sony, et refus des entités', () => {
-  assert.deepEqual(m.parseSidecarXml('<Device><Manufacturer>CANON</Manufacturer><ModelName>EOS C70</ModelName></Device>'), { cameraMake: 'CANON', cameraModel: 'EOS C70', date: '', captureGamma: '', capturePrimaries: '' });
+  assert.deepEqual(m.parseSidecarXml('<Device><Manufacturer>CANON</Manufacturer><ModelName>EOS C70</ModelName></Device>'), { cameraMake: 'CANON', cameraModel: 'EOS C70', date: '', time: '', captureGamma: '', capturePrimaries: '' });
   const sony = m.parseSidecarXml('<NonRealTimeMeta><CreationDate value="2026-09-12T10:00:00+02:00"/><Device manufacturer="Sony" modelName="ILME-FX6V"/></NonRealTimeMeta>');
   assert.equal(sony.cameraModel, 'ILME-FX6V');
   assert.equal(sony.date, '2026-09-12');
+  assert.equal(sony.time, '10:00:00');
   assert.equal(m.parseSidecarXml('<!DOCTYPE x [<!ENTITY a "b">]><Manufacturer>&a;</Manufacturer>'), null);
 });
 
@@ -66,4 +67,39 @@ test('parseSidecarXml : gamma Sony', () => {
   const r = m.parseSidecarXml(x);
   assert.equal(r.captureGamma, 's-log3-cine');
   assert.equal(r.capturePrimaries, 's-gamut3-cine');
+});
+
+test('normalizeTime : heure locale, fuseau converti', () => {
+  process.env.TZ = 'Europe/Paris';
+  assert.equal(m.normalizeTime('2026-09-12T22:30:05.000000Z'), '00:30:05');
+  assert.equal(m.normalizeTime('2026-09-12 12:30:00 +0000'), '14:30:00');
+  assert.equal(m.normalizeTime('2026:09:12 23:10:00'), '23:10:00');
+  assert.equal(m.normalizeTime('2026-09-12 09:41'), '09:41:00');
+  assert.equal(m.normalizeTime('20260912'), '');
+});
+
+test('parseTimecode : non drop, drop frame et valeurs invalides', () => {
+  assert.equal(m.parseTimecode('01:00:00:00', 25), 3600);
+  assert.equal(m.parseTimecode('10:02:03;12', 29.97), 36123 + 12 / 29.97);
+  assert.ok(m.parseTimecode('10:02:03:24', 25) < m.parseTimecode('10:02:04:00', 25));
+  assert.ok(m.parseTimecode('10:02:03:59') < m.parseTimecode('10:02:04:00'), 'sans fréquence, les images restent sous la seconde');
+  assert.equal(m.parseTimecode('25:00:00:00', 25), null);
+  assert.equal(m.parseTimecode('', 25), null);
+});
+
+test('sortForTimeline : jour, puis timecode ou heure, puis nom', () => {
+  const f = (name, shootingDate, timecode, shootingTime) => ({ name, shootingDate, timecode, shootingTime, fps: 25 });
+  const files = [
+    f('B_FX6.MP4', '2026-09-12', '14:00:00:00', '09:00:00'),
+    f('A_C70.MXF', '2026-09-12', '10:00:00:00', '11:00:00'),
+    f('SANS_TC.MOV', '2026-09-12', '', '12:00:00'),
+    f('J2.MP4', '2026-09-13', '08:00:00:00', '08:00:00'),
+    f('INCONNU.MOV', 'Date inconnue', '', '')
+  ];
+  const names = (order) => m.sortForTimeline(files, order).map((x) => x.name);
+  assert.deepEqual(names('timecode'), ['A_C70.MXF', 'SANS_TC.MOV', 'B_FX6.MP4', 'J2.MP4', 'INCONNU.MOV']);
+  assert.deepEqual(names('time'), ['B_FX6.MP4', 'A_C70.MXF', 'SANS_TC.MOV', 'J2.MP4', 'INCONNU.MOV']);
+  assert.deepEqual(names('import'), files.map((x) => x.name));
+  const wrapped = m.sortForTimeline(files.map((file) => ({ file })), 'timecode', (entry) => entry.file);
+  assert.equal(wrapped[0].file.name, 'A_C70.MXF');
 });

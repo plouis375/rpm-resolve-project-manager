@@ -8,7 +8,7 @@ const { createReadStream } = require('node:fs');
 const WorkflowIntegration = require('./WorkflowIntegration.node');
 const { addWatchFolders, isProcessRunning } = require('./proxy-settings');
 const {
-  VIDEO, SUPPORTED, cleanText, categoryFor, normalizeBrand, normalizeDate, localDate,
+  VIDEO, SUPPORTED, SYNC_AUDIO, cleanText, categoryFor, normalizeBrand, normalizeDate, normalizeTime, localDate, localTime,
   sidecarCandidates, filterSidecars, parseSidecarXml, markDuplicates
 } = require('./lib/media');
 const { PROFILES, profileFromMetadata } = require('./lib/cst');
@@ -57,6 +57,23 @@ function runOperation(event, operationId, task) {
     event.sender.removeListener('destroyed', onDestroyed);
     operations.delete(operationId);
   });
+}
+
+const AUDIO_SYNC_CONSTANTS = [
+  'AUDIO_SYNC_MODE', 'AUDIO_SYNC_CHANNEL_NUMBER', 'AUDIO_SYNC_RETAIN_EMBEDDED_AUDIO', 'AUDIO_SYNC_RETAIN_VIDEO_METADATA',
+  'AUDIO_SYNC_WAVEFORM', 'AUDIO_SYNC_TIMECODE', 'AUDIO_SYNC_CHANNEL_AUTOMATIC'
+];
+
+// Constantes resolve.AUDIO_SYNC_* pour MediaPool.AutoSyncAudio ; absentes sur les versions qui ne les exposent pas.
+async function readResolveConstants() {
+  const constants = {};
+  for (const name of AUDIO_SYNC_CONSTANTS) {
+    try {
+      const value = await resolveObj?.[name];
+      if (value !== undefined && value !== null && typeof value !== 'function') constants[name] = value;
+    } catch (_) {}
+  }
+  return constants;
 }
 
 async function connectResolve() {
@@ -149,10 +166,15 @@ async function probeWithFFprobe(filePath, signal) {
     const streams = data.streams || [];
     const tags = Object.assign({}, data.format?.tags || {}, ...streams.map((stream) => stream.tags || {}));
     const duration = Number(data.format?.duration || streams.find((item) => item.duration)?.duration);
+    const recorded = metadataValue(tags, ['creation_time', 'com.apple.quicktime.creationdate', 'date_recorded', 'date']);
+    // WAV BWF : date et heure d'origine dans deux champs séparés.
+    const origination = [metadataValue(tags, ['origination_date']), metadataValue(tags, ['origination_time'])].filter(Boolean).join(' ').replace(/^(\d{4}-\d{2}-\d{2}) (\d{2})[-:](\d{2})[-:](\d{2})$/, '$1 $2:$3:$4');
     return {
       cameraMake: cameraMake(tags),
       cameraModel: cameraModel(tags),
-      date: normalizeDate(metadataValue(tags, ['creation_time', 'com.apple.quicktime.creationdate', 'date_recorded', 'date'])),
+      date: normalizeDate(recorded || origination),
+      time: normalizeTime(recorded || origination),
+      timecode: metadataValue(tags, ['timecode']),
       duration: Number.isFinite(duration) && duration > 0 ? duration : null,
       format: frameRate(streams),
       verified: streams.length > 0
@@ -179,6 +201,7 @@ async function probeWithSpotlight(filePath, signal) {
       cameraMake: cleanText(values.kMDItemAcquisitionMake),
       cameraModel: cleanText(values.kMDItemAcquisitionModel),
       date: normalizeDate(values.kMDItemContentCreationDate),
+      time: normalizeTime(values.kMDItemContentCreationDate),
       duration: Number.isFinite(duration) && duration > 0 ? duration : null,
       format: width && height ? { width, height, fps: null } : null,
       verified: Boolean(width || height || duration || values.kMDItemContentCreationDate)
@@ -236,14 +259,20 @@ async function enrichFile(file, signal) {
       metadata.captureGamma = sidecar.captureGamma || '';
       metadata.cameraMake ||= sidecar.cameraMake;
       metadata.cameraModel ||= sidecar.cameraModel;
-      metadata.date ||= sidecar.date;
+      if (!metadata.date && sidecar.date) {
+        metadata.date = sidecar.date;
+        metadata.time = sidecar.time;
+      }
     }
   }
   throwIfAborted(signal);
   const rawMake = metadata.cameraMake || '';
   const rawModel = metadata.cameraModel || '';
   const shootingDate = metadata.date || localDate(stat.birthtime);
+  // L'heure suit la source de la date : jamais une date des métadonnées avec l'heure du fichier.
+  const shootingTime = metadata.date ? metadata.time || '' : localTime(stat.birthtime);
   const isVideo = VIDEO.has(file.extension);
+  const isSyncAudio = SYNC_AUDIO.has(file.extension);
   const missingVideoMetadata = isVideo && (!rawMake || !rawModel);
   return {
     id: crypto.randomUUID(),
@@ -261,7 +290,10 @@ async function enrichFile(file, signal) {
     cameraModel: isVideo ? rawModel : '',
     captureGamma: isVideo ? metadata.captureGamma || '' : '',
     colorProfile: isVideo ? profileFromMetadata(normalizeBrand(rawMake, rawModel), rawModel, metadata.captureGamma) || '' : '',
-    shootingDate: isVideo ? shootingDate : '',
+    // Son direct : date gardée pour synchroniser jour par jour (le timecode se répète d'un jour à l'autre).
+    shootingDate: isVideo || isSyncAudio ? shootingDate : '',
+    shootingTime: isVideo || isSyncAudio ? shootingTime : '',
+    timecode: isVideo || isSyncAudio ? cleanText(metadata.timecode) : '',
     dateSource: isVideo ? (metadata.date ? 'metadata' : 'creation') : '',
     verified: metadata.verified,
     needsReview: stat.size === 0 || !metadata.verified || missingVideoMetadata,
@@ -575,7 +607,8 @@ async function createProject(event, options) {
       totalCount: snapshot.length,
       options,
       progress: (stage, current, total, label) => sendProgress(event, { stage, current, total, label }),
-      presetDir: path.join(__dirname, 'presets')
+      presetDir: path.join(__dirname, 'presets'),
+      resolveConstants: options.syncAudio ? await readResolveConstants() : {}
     });
     scanSnapshots.delete(options.scanId);
     return result;

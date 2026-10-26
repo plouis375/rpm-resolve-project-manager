@@ -48,7 +48,7 @@
           <div class="bin-list" id="binPreview"></div>
         </div>
         <div class="view-footer">
-          <div class="connection-wrap"><span class="muted" id="connectionState">Connexion à Resolve…</span><button class="button secondary compact" id="retryConnection" hidden>Reconnecter</button><span class="app-meta">v0.19 · <button class="link-button" id="uninstallPlugin" type="button">Désinstaller</button></span></div>
+          <div class="connection-wrap"><span class="muted" id="connectionState">Connexion à Resolve…</span><button class="button secondary compact" id="retryConnection" hidden>Reconnecter</button><span class="app-meta">v0.20 · <button class="link-button" id="uninstallPlugin" type="button">Désinstaller</button></span></div>
           <button class="button primary" id="toSources" disabled>Continuer</button>
         </div>
       </section>
@@ -179,6 +179,12 @@
               <option value="60">60 i/s</option>
             </select></label>
             <p class="timeline-note">En automatique, l’assistant reprend le format principal des rushs. S’il n’y a pas de format majoritaire, il propose du 1920 × 1080 à 24 i/s.</p>
+            <label class="timeline-field"><span>Ordre des plans</span><select id="timelineOrder">
+              <option value="timecode">Timecode · toutes caméras confondues</option>
+              <option value="time">Heure d’enregistrement</option>
+              <option value="import">Par caméra · ordre des chutiers</option>
+            </select></label>
+            <p class="timeline-note">Les plans sont rangés jour par jour. Un plan sans timecode est placé selon son heure d’enregistrement, et inversement.</p>
             <label class="timeline-toggle">
               <span class="option-check"><input id="timelinePerCamera" type="checkbox"><span class="checkmark"></span></span>
               <span><strong>Une timeline par caméra</strong><span>En plus de l’assemblage, crée une timeline pour chaque caméra (si le tournage en compte plusieurs).</span></span>
@@ -195,6 +201,18 @@
               <option value="rec709a">Rec.709-A · visionnage sur Mac</option>
               <option value="gamma24">Rec.709 Gamma 2.4 · diffusion</option>
             </select></label>
+          </div>
+          <label class="option-row">
+            <span class="option-check"><input id="syncAudio" type="checkbox"><span class="checkmark"></span></span>
+            <span class="option-copy"><strong>Synchroniser le son enregistré à part</strong><span>Après l’import, Resolve associe les fichiers WAV et AIFF retenus aux rushs du même jour de tournage. Le son caméra est conservé. Les timelines d’assemblage reprennent le son synchronisé.</span></span>
+            <span class="option-state">Optionnel</span>
+          </label>
+          <div class="timeline-controls" id="syncControls" hidden>
+            <label class="timeline-field"><span>Synchroniser par</span><select id="syncMode">
+              <option value="timecode">Timecode · enregistreur et caméras calés</option>
+              <option value="waveform">Forme d’onde · son témoin des caméras</option>
+            </select></label>
+            <p class="timeline-note">Le timecode est rapide et fiable si les appareils ont été synchronisés au tournage. La forme d’onde compare le son caméra au son direct : plus lente, elle demande un son témoin audible.</p>
           </div>
           <label class="option-row">
             <span class="option-check"><input id="prepareProxies" type="checkbox"><span class="checkmark"></span></span>

@@ -1,5 +1,12 @@
 # Historique des versions
 
+## v0.20.0 — 26 octobre 2026
+
+- **Synchro du son enregistré à part** (option de l’étape Organisation) : après l’import, Resolve associe les fichiers WAV et AIFF retenus aux rushs du même jour, par timecode ou par forme d’onde (`MediaPool.AutoSyncAudio`). Le son caméra est conservé, et les timelines d’assemblage reprennent le son synchronisé. Le rapport final indique les jours synchronisés et ceux à vérifier.
+- **Ordre des plans dans les timelines** : par timecode (toutes caméras confondues), par heure d’enregistrement, ou par caméra comme avant. Les plans restent rangés jour par jour ; un plan sans timecode est placé selon son heure d’enregistrement.
+- L’analyse lit le timecode de départ et l’heure d’enregistrement des rushs (métadonnées, XML Sony et Canon, champs BWF des WAV). Le timecode s’affiche sous la durée à l’étape Sources.
+- Ces choix sont mémorisés d’un projet à l’autre.
+
 ## v0.19.0
 
 - Nouvelle esthétique : thème sombre inspiré de DaVinci Resolve (fond anthracite, filets gris, accent orange) à la place du thème papier.

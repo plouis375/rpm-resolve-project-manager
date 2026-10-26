@@ -5,10 +5,11 @@
 
 const path = require('node:path');
 const fs = require('node:fs/promises');
-const { SEQUENCE, FRAME_RATES, cleanText, dominantFormat, nearestFrameRate, matchImported } = require('./media');
+const { SEQUENCE, SYNC_AUDIO, FRAME_RATES, cleanText, dominantFormat, nearestFrameRate, matchImported, sortForTimeline } = require('./media');
 const { PROFILES, OUTPUTS, presetFileName } = require('./cst');
 
-const DEFAULT_TIMEOUTS = { importMs: 120000, cstMs: 20000 };
+const DEFAULT_TIMEOUTS = { importMs: 120000, cstMs: 20000, syncMs: 300000 };
+const SYNC_MODES = { timecode: 'Timecode', waveform: 'Forme d’onde' };
 const IMPORT_BATCH_SIZE = 25;
 const TIMELINE_RESOLUTIONS = new Set(['1280x720', '1920x1080', '2048x1080', '3840x2160', '4096x2160', '1080x1920', '1080x1080']);
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -151,6 +152,7 @@ async function groupByDestination(mediaPool, bins, importable) {
 // Importe par lots ; associe les clips par chemin, jamais par position seule.
 async function importGroups({ mediaPool, groups, totalBatches, progress, logger, importMs }) {
   const importedRushes = [];
+  const importedAudio = [];
   const failures = [];
   // Lots pour lesquels Resolve ne dit ni quels clips sont importés ni où : on ne peut pas trancher.
   const unverified = [];
@@ -194,12 +196,13 @@ async function importGroups({ mediaPool, groups, totalBatches, progress, logger,
       failures.push(...failed.map((file) => file.name));
       for (const { file, index } of matched) {
         if (file.category === 'Rushs') importedRushes.push({ file, item: items[index] });
+        else if (SYNC_AUDIO.has(file.extension)) importedAudio.push({ file, item: items[index] });
       }
       completedBatches += 1;
       progress('import', completedBatches, Math.max(totalBatches, 1), 'Import des médias dans Resolve');
     }
   }
-  return { importedRushes, failures, unverified, completedBatches };
+  return { importedRushes, importedAudio, failures, unverified, completedBatches };
 }
 
 async function importSequences({ mediaPool, sequenceFiles, bins, startCount, totalBatches, progress }) {
@@ -220,8 +223,59 @@ async function importSequences({ mediaPool, sequenceFiles, bins, startCount, tot
   return sequenceFailures;
 }
 
+// Réglages de MediaPool.AutoSyncAudio. Les clés et les modes sont des constantes de l’objet Resolve
+// (resolve.AUDIO_SYNC_*) ; à défaut, on reprend les noms documentés et le mode par défaut (timecode).
+// Retourne null si la forme d’onde est demandée mais que Resolve n’expose pas sa constante.
+function audioSyncSettings(mode, constants = {}) {
+  const key = (name, fallback) => constants[name] ?? fallback;
+  const settings = {};
+  if (mode === 'waveform') {
+    if (constants.AUDIO_SYNC_WAVEFORM === undefined) return null;
+    settings[key('AUDIO_SYNC_MODE', 'syncMode')] = constants.AUDIO_SYNC_WAVEFORM;
+    if (constants.AUDIO_SYNC_CHANNEL_AUTOMATIC !== undefined) settings[key('AUDIO_SYNC_CHANNEL_NUMBER', 'channelNumber')] = constants.AUDIO_SYNC_CHANNEL_AUTOMATIC;
+  } else if (constants.AUDIO_SYNC_TIMECODE !== undefined) {
+    settings[key('AUDIO_SYNC_MODE', 'syncMode')] = constants.AUDIO_SYNC_TIMECODE;
+  }
+  // Le son caméra reste disponible (son témoin) et les métadonnées du plan vidéo sont gardées.
+  settings[key('AUDIO_SYNC_RETAIN_EMBEDDED_AUDIO', 'retainEmbeddedAudio')] = true;
+  settings[key('AUDIO_SYNC_RETAIN_VIDEO_METADATA', 'retainVideoMetadata')] = true;
+  return settings;
+}
+
+// Synchronise le son direct avec l’image, jour par jour : le timecode « heure du jour » se répète
+// d’un jour de tournage à l’autre, et la forme d’onde est plus rapide et plus sûre sur un petit lot.
+async function syncAudio({ mediaPool, importedRushes, importedAudio, mode, constants, progress, logger, syncMs }) {
+  const syncMode = SYNC_MODES[mode] ? mode : 'timecode';
+  const report = { mode: SYNC_MODES[syncMode], days: [], audioCount: importedAudio.length, unmatchedAudio: 0, unavailable: false };
+  if (!importedAudio.length || !importedRushes.length) return report;
+  const settings = audioSyncSettings(syncMode, constants);
+  if (!settings) { report.unavailable = true; return report; }
+  const dayOf = ({ file }) => DATE_PATTERN.test(file.shootingDate || '') ? file.shootingDate : 'Date inconnue';
+  const days = new Map();
+  for (const [kind, entries] of [['video', importedRushes], ['audio', importedAudio]]) {
+    for (const entry of entries) {
+      const day = dayOf(entry);
+      if (!days.has(day)) days.set(day, { video: [], audio: [] });
+      days.get(day)[kind].push(entry.item);
+    }
+  }
+  const plans = [...days].filter(([, group]) => group.video.length && group.audio.length).sort((a, b) => a[0].localeCompare(b[0]));
+  report.unmatchedAudio = [...days.values()].filter((group) => !group.video.length).reduce((sum, group) => sum + group.audio.length, 0);
+  for (let index = 0; index < plans.length; index += 1) {
+    const [day, group] = plans[index];
+    progress('sync', index, plans.length, `Synchronisation du son · ${day}`);
+    let ok = false;
+    try { ok = Boolean(await withTimeout(mediaPool.AutoSyncAudio([...group.video, ...group.audio], settings), syncMs)); } catch (error) { warnResolve(`AutoSyncAudio ${day}`, error, logger); }
+    report.days.push({ day, ok, video: group.video.length, audio: group.audio.length });
+  }
+  progress('sync', plans.length, plans.length, 'Synchronisation du son');
+  return report;
+}
+
 // Crée la timeline d’assemblage principale puis, si demandé, une timeline par caméra et/ou par jour.
-async function buildTimelines({ project, mediaPool, bins, root, name, importedRushes, options, timelineSettings, progress, presetDir, logger, checkpoint, cstMs }) {
+async function buildTimelines({ project, mediaPool, bins, root, name, importedRushes: imported, options, timelineSettings, progress, presetDir, logger, checkpoint, cstMs }) {
+  // Les timelines suivent l’ordre de tournage choisi ; les regroupements par caméra ou par jour le conservent.
+  const importedRushes = sortForTimeline(imported, options.timelineOrder, (entry) => entry.file);
   let timelineName = '';
   let timelineFormat = '';
   let timelineWarning = timelineSettings?.warning || '';
@@ -295,9 +349,18 @@ async function buildTimelines({ project, mediaPool, bins, root, name, importedRu
   return { timelineName, timelineFormat, timelineWarning, colorReport, extraTimelines };
 }
 
+function syncWarning(report) {
+  if (!report) return '';
+  if (report.unavailable) return 'Synchro du son impossible : cette version de Resolve n’expose pas la synchro par forme d’onde. Essaie le timecode.';
+  if (!report.audioCount) return 'Synchro du son : aucun fichier WAV ou AIFF importé.';
+  if (!report.days.length) return 'Synchro du son : aucun jour de tournage ne réunit à la fois image et son direct. Vérifie les dates.';
+  const failed = report.days.filter((day) => !day.ok).map((day) => day.day);
+  return failed.length ? `Resolve n’a pas confirmé la synchro du son pour ${failed.join(', ')}. Vérifie ces jours dans le Media Pool.` : '';
+}
+
 // Crée le projet et renvoie le rapport. `selected` = fichiers retenus, `folders` = chutiers validés.
-async function createProjectInResolve({ projectManager, name, folders, selected, totalCount, options, progress = () => {}, presetDir, logger = console, timeouts = {} }) {
-  const { importMs, cstMs } = { ...DEFAULT_TIMEOUTS, ...timeouts };
+async function createProjectInResolve({ projectManager, name, folders, selected, totalCount, options, progress = () => {}, presetDir, logger = console, timeouts = {}, resolveConstants = {} }) {
+  const { importMs, cstMs, syncMs } = { ...DEFAULT_TIMEOUTS, ...timeouts };
   const checkpoint = async () => {
     try { await projectManager.SaveProject(); } catch (error) { warnResolve('SaveProject (checkpoint)', error, logger); }
   };
@@ -344,6 +407,13 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
     await checkpoint();
     const sequenceFailures = await importSequences({ mediaPool, sequenceFiles, bins, startCount: imported.completedBatches, totalBatches, progress });
 
+    // Synchro avant les timelines : elles reprennent alors le son direct lié à chaque plan.
+    let syncReport = null;
+    if (options.syncAudio) {
+      syncReport = await syncAudio({ mediaPool, importedRushes: imported.importedRushes, importedAudio: imported.importedAudio, mode: options.syncMode, constants: resolveConstants, progress, logger, syncMs });
+      if (syncReport.days.some((day) => day.ok)) await checkpoint();
+    }
+
     const timelines = await buildTimelines({ project, mediaPool, bins, root, name, importedRushes: imported.importedRushes, options, timelineSettings, progress, presetDir, logger, checkpoint, cstMs });
     const { timelineName, timelineFormat, colorReport, extraTimelines } = timelines;
     let timelineWarning = timelines.timelineWarning;
@@ -362,7 +432,9 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
       timelineFormat,
       extraTimelines,
       colorReport,
+      syncReport,
       warning: [timelineWarning,
+        syncWarning(syncReport),
         colorReport?.unrecognized.length ? `${colorReport.unrecognized.length} plan(s) sans CST : caméra non reconnue.` : '',
         colorReport?.failed.length ? `Resolve n’a pas appliqué le CST sur ${colorReport.failed.length} plan(s).` : '',
         failures.length ? `${failures.length} média(s) n’ont pas été importés.` : '',
@@ -379,4 +451,4 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
   }
 }
 
-module.exports = { createProjectInResolve, safeBinName, DEFAULT_TIMEOUTS };
+module.exports = { createProjectInResolve, safeBinName, audioSyncSettings, DEFAULT_TIMEOUTS };

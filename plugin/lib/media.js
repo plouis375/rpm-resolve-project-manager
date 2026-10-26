@@ -7,6 +7,8 @@ const AUDIO = new Set(['.wav', '.aif', '.aiff', '.mp3', '.m4a', '.aac', '.flac',
 const STILL = new Set(['.png', '.jpg', '.jpeg', '.tif', '.tiff', '.bmp', '.webp', '.heic', '.heif', '.exr', '.dpx', '.dng', '.arw', '.cr2', '.cr3', '.nef', '.raf']);
 const GRAPHIC = new Set(['.psd', '.ai', '.eps', '.svg', '.pdf']);
 const SEQUENCE = new Set(['.fcpxml', '.edl', '.aaf', '.drt', '.otio', '.xml']);
+// Formats des enregistreurs son (son direct) : seuls candidats à la synchro avec l'image.
+const SYNC_AUDIO = new Set(['.wav', '.aif', '.aiff']);
 const SUPPORTED = new Set([...VIDEO, ...AUDIO, ...STILL, ...GRAPHIC, ...SEQUENCE]);
 const FRAME_RATES = [23.976, 24, 25, 29.97, 30, 47.952, 48, 50, 59.94, 60, 100, 119.88, 120];
 
@@ -64,6 +66,65 @@ function normalizeDate(value) {
   return Number.isNaN(date.getTime()) ? '' : localDate(date);
 }
 
+function localTime(date) {
+  return [date.getHours(), date.getMinutes(), date.getSeconds()].map((n) => String(n).padStart(2, '0')).join(':');
+}
+
+// Heure d'enregistrement HH:MM:SS, avec les mêmes règles de fuseau que normalizeDate.
+function normalizeTime(value) {
+  const input = cleanText(value);
+  if (!input) return '';
+  const exif = input.match(/^\d{4}:\d{2}:\d{2}[ T](\d{2}):(\d{2}):(\d{2})/);
+  if (exif) return `${exif[1]}:${exif[2]}:${exif[3]}`;
+  const iso = input.match(/^\d{4}-\d{2}-\d{2}[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (!iso) return '';
+  if (/(Z|[+-]\d{2}:?\d{2})$/.test(input)) {
+    const date = new Date(input.replace(' ', 'T').replace(/ ?([+-]\d{2})(\d{2})$/, '$1:$2'));
+    if (!Number.isNaN(date.getTime())) return localTime(date);
+  }
+  return `${iso[1]}:${iso[2]}:${iso[3] || '00'}`;
+}
+
+// Timecode HH:MM:SS:FF (ou ; en drop frame) → secondes depuis minuit. null si absent ou invalide.
+function parseTimecode(value, fps) {
+  const match = cleanText(value).match(/^(\d{1,2})[:;.](\d{2})[:;.](\d{2})[:;.](\d{2,3})$/);
+  if (!match) return null;
+  const [hours, minutes, seconds, frames] = match.slice(1).map(Number);
+  if (hours > 23 || minutes > 59 || seconds > 59) return null;
+  // Seul l'ordre compte : les images restent sous la seconde, même sans fréquence connue.
+  const base = Number.isFinite(fps) && fps > frames ? fps : frames + 1;
+  return hours * 3600 + minutes * 60 + seconds + frames / base;
+}
+
+function secondsOfDay(time) {
+  const match = cleanText(time).match(/^(\d{2}):(\d{2}):(\d{2})$/);
+  return match ? Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]) : null;
+}
+
+// Ordre des plans dans les timelines : par jour, puis timecode ou heure d'enregistrement, puis nom.
+// 'timecode' se replie sur l'heure quand un plan n'a pas de timecode (et inversement pour 'time').
+// 'import' garde l'ordre reçu (chutier par chutier).
+function sortForTimeline(entries, order = 'timecode', fileOf = (entry) => entry) {
+  if (order !== 'timecode' && order !== 'time') return [...entries];
+  const keyed = entries.map((entry, index) => {
+    const file = fileOf(entry) || {};
+    const timecode = parseTimecode(file.timecode, file.fps);
+    const time = secondsOfDay(file.shootingTime);
+    return {
+      entry,
+      index,
+      date: /^\d{4}-\d{2}-\d{2}$/.test(file.shootingDate || '') ? file.shootingDate : '9999-99-99',
+      seconds: order === 'timecode' ? timecode ?? time : time ?? timecode,
+      name: String(file.name || '')
+    };
+  });
+  keyed.sort((a, b) => a.date.localeCompare(b.date)
+    || (a.seconds ?? Infinity) - (b.seconds ?? Infinity)
+    || a.name.localeCompare(b.name, 'fr', { numeric: true, sensitivity: 'base' })
+    || a.index - b.index);
+  return keyed.map(({ entry }) => entry);
+}
+
 // Chemins possibles d'un sidecar XML de métadonnées pour un fichier vidéo.
 // Canon : CLIP.MXF -> CLIP.XML ; Sony : C0001.MP4 -> C0001M01.XML
 function sidecarCandidates(videoPath) {
@@ -104,7 +165,7 @@ function parseSidecarXml(xml) {
   const captureGamma = item('CaptureGammaEquation');
   const capturePrimaries = item('CaptureColorPrimaries');
   return make || model || date || captureGamma
-    ? { cameraMake: make, cameraModel: model, date: normalizeDate(date), captureGamma, capturePrimaries }
+    ? { cameraMake: make, cameraModel: model, date: normalizeDate(date), time: normalizeTime(date), captureGamma, capturePrimaries }
     : null;
 }
 
@@ -171,7 +232,8 @@ function matchImported(batch, importedPaths) {
 
 module.exports = {
   VIDEO, AUDIO, STILL, GRAPHIC, SEQUENCE, SUPPORTED, FRAME_RATES,
-  cleanText, categoryFor, normalizeBrand, normalizeDate, localDate,
+  SYNC_AUDIO, cleanText, categoryFor, normalizeBrand, normalizeDate, normalizeTime, localDate, localTime,
+  parseTimecode, secondsOfDay, sortForTimeline,
   sidecarCandidates, filterSidecars, parseSidecarXml,
   duplicateFingerprint, markDuplicates, nearestFrameRate, dominantFormat, matchImported
 };

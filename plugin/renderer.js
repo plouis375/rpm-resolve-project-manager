@@ -471,7 +471,7 @@ function renderTable() {
       const profileCell = file.category === 'Rushs'
         ? `<select class="type-select profile-select${file.colorProfile ? '' : ' profile-unknown'}" data-profile="${file.id}" aria-label="Profil couleur de ${escapeHTML(file.name)}" title="${file.colorProfileManual ? 'Choisi à la main' : 'Détecté automatiquement'}">${COLOR_PROFILES.map(([value, label]) => `<option value="${value}"${(file.colorProfile || '') === value ? ' selected' : ''}>${escapeHTML(label)}</option>`).join('')}</select>`
         : '<span class="profile-none">—</span>';
-      return `<tr data-row="${file.id}" class="${file.duplicateOf ? 'duplicate-row' : ''}"><td><div class="file-cell"><span class="file-symbol">${categoryColor(file.category)}</span><div class="file-copy"><div class="file-name" title="${escapeHTML(file.name)}">${escapeHTML(file.name)}</div><div class="file-path" title="${escapeHTML(file.filePath)}">${escapeHTML(file.filePath)}</div><div class="review-marks">${badges}</div></div></div></td><td><select class="type-select" data-category="${file.id}" aria-label="Type de ${escapeHTML(file.name)}">${state.folders.map((folder) => `<option value="${escapeHTML(folder.id)}"${file.category === folder.id ? ' selected' : ''}>${escapeHTML(folder.name)}</option>`).join('')}</select></td><td><div class="destination-cell"><span class="folder-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 5.5h6l1.4 1.6H18v8.9H2z"/><path d="M2 5.5V4h6l1.4 1.6"/></svg></span>${destination}</div></td><td>${profileCell}</td><td class="size-cell">${bytesLabel(file.size)}</td><td class="duration-cell">${durationLabel(file.duration)}</td><td><input class="row-toggle" type="checkbox" data-include="${file.id}" ${file.include ? 'checked' : ''} aria-label="Inclure ${escapeHTML(file.name)}"></td></tr>`;
+      return `<tr data-row="${file.id}" class="${file.duplicateOf ? 'duplicate-row' : ''}"><td><div class="file-cell"><span class="file-symbol">${categoryColor(file.category)}</span><div class="file-copy"><div class="file-name" title="${escapeHTML(file.name)}">${escapeHTML(file.name)}</div><div class="file-path" title="${escapeHTML(file.filePath)}">${escapeHTML(file.filePath)}</div><div class="review-marks">${badges}</div></div></div></td><td><select class="type-select" data-category="${file.id}" aria-label="Type de ${escapeHTML(file.name)}">${state.folders.map((folder) => `<option value="${escapeHTML(folder.id)}"${file.category === folder.id ? ' selected' : ''}>${escapeHTML(folder.name)}</option>`).join('')}</select></td><td><div class="destination-cell"><span class="folder-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 5.5h6l1.4 1.6H18v8.9H2z"/><path d="M2 5.5V4h6l1.4 1.6"/></svg></span>${destination}</div></td><td>${profileCell}</td><td class="size-cell">${bytesLabel(file.size)}</td><td class="duration-cell">${durationLabel(file.duration)}${file.timecode ? `<div class="timecode-label" title="Timecode de début">TC ${escapeHTML(file.timecode)}</div>` : ''}</td><td><input class="row-toggle" type="checkbox" data-include="${file.id}" ${file.include ? 'checked' : ''} aria-label="Inclure ${escapeHTML(file.name)}"></td></tr>`;
     }).join('');
   }
 
@@ -718,8 +718,8 @@ function updateCreateProgress(progress) {
   const bar = $('createProgressBar');
   const text = $('createProgressText');
   const fraction = progress.total ? progress.current / progress.total : 0;
-  const stageBase = progress.stage === 'project' ? 0 : progress.stage === 'bins' ? .08 : progress.stage === 'import' ? .25 : progress.stage === 'grade' ? .9 : 1;
-  const stageWeight = progress.stage === 'project' ? .08 : progress.stage === 'bins' ? .17 : progress.stage === 'import' ? .65 : progress.stage === 'grade' ? .09 : 0;
+  const stageBase = progress.stage === 'project' ? 0 : progress.stage === 'bins' ? .08 : progress.stage === 'import' ? .25 : progress.stage === 'sync' ? .82 : progress.stage === 'grade' ? .9 : 1;
+  const stageWeight = progress.stage === 'project' ? .08 : progress.stage === 'bins' ? .17 : progress.stage === 'import' ? .57 : progress.stage === 'sync' ? .08 : progress.stage === 'grade' ? .09 : 0;
   bar.style.width = `${Math.min(99, Math.round((stageBase + stageWeight * fraction) * 100))}%`;
   text.textContent = progress.label || 'Préparation dans Resolve…';
 }
@@ -736,6 +736,13 @@ function renderCompletion(result) {
     ['Chutiers créés', result.createdBins.join(' · ')],
     ['Timeline', result.timelineName ? `${result.timelineName} · ${result.timelineFormat}` : 'Aucune timeline créée']
   ];
+  if (result.syncReport) {
+    const { days, mode, audioCount, unmatchedAudio } = result.syncReport;
+    const synced = days.filter((day) => day.ok).length;
+    rows.push(['Synchro du son', days.length
+      ? `${synced} / ${days.length} jour(s) · ${mode}${unmatchedAudio ? ` · ${unmatchedAudio} fichier(s) son sans image le même jour` : ''}`
+      : audioCount ? 'Aucun jour avec image et son' : 'Aucun son direct importé']);
+  }
   if (result.extraTimelines?.length) rows.push(['Timelines supplémentaires', result.extraTimelines.map((n) => n.split(' — ').pop()).join(' · ')]);
   if (result.colorReport) {
     const { applied, unrecognized, failed, output } = result.colorReport;
@@ -775,6 +782,9 @@ async function createProjectNow() {
       timelinePerCamera: $('timelinePerCamera').checked,
       timelinePerDay: $('timelinePerDay').checked,
       cstOutput: $('cstOutput').value,
+      timelineOrder: $('timelineOrder').value,
+      syncAudio: $('syncAudio').checked,
+      syncMode: $('syncMode').value,
       folders: state.folders.map(({ id, name }) => ({ id, name })),
       files: state.files.map(({ id, category, cameraBrand, cameraModel, shootingDate, colorProfile, include }) => ({ id, category, cameraBrand, cameraModel, shootingDate, colorProfile: colorProfile || '', include }))
     });
@@ -855,6 +865,22 @@ try {
   const savedOutput = localStorage.getItem('rpm.cstOutput');
   if (savedOutput && [...$('cstOutput').options].some((option) => option.value === savedOutput)) $('cstOutput').value = savedOutput;
   $('cstOutputField').hidden = !$('applyCst').checked;
+} catch (_) {}
+// Ordre des plans et synchro : réglages mémorisés d’un projet à l’autre.
+[['timelineOrder', 'rpm.timelineOrder'], ['syncMode', 'rpm.syncMode']].forEach(([id, key]) => {
+  $(id).addEventListener('change', (event) => { try { localStorage.setItem(key, event.target.value); } catch (_) {} });
+  try {
+    const saved = localStorage.getItem(key);
+    if (saved && [...$(id).options].some((option) => option.value === saved)) $(id).value = saved;
+  } catch (_) {}
+});
+$('syncAudio').addEventListener('change', (event) => {
+  $('syncControls').hidden = !event.target.checked;
+  try { localStorage.setItem('rpm.syncAudio', event.target.checked ? '1' : '0'); } catch (_) {}
+});
+try {
+  $('syncAudio').checked = localStorage.getItem('rpm.syncAudio') === '1';
+  $('syncControls').hidden = !$('syncAudio').checked;
 } catch (_) {}
 $('backToSources').addEventListener('click', () => setStep(2));
 $('uninstallPlugin').addEventListener('click', async () => {

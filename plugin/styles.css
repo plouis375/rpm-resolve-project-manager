@@ -156,6 +156,7 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); }
 .destination-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .muted { color: var(--secondary); }
 .size-cell, .duration-cell { color: var(--secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.timecode-label { margin-top: 4px; font-size: 11px; opacity: .8; }
 .review-mark { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; color: var(--amber); font-size: 11px; font-weight: 600; }
 .review-marks { display: flex; flex-wrap: wrap; gap: 0 8px; }
 .review-mark.empty-mark { color: var(--amber); }

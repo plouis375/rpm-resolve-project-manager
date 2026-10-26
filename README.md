@@ -165,9 +165,21 @@ Option facultative : Resolve crée `Nom du projet — Assemblage` dans le chutie
 | **Résolution** | HD, Full HD, 2K/4K DCI, Ultra HD, vertical ou carré |
 | **Fréquence** | de 23,976 à 60 i/s |
 | **Automatique** | format majoritaire des rushs, sinon 1920 × 1080 à 24 i/s |
+| **Ordre des plans** | timecode (toutes caméras confondues), heure d’enregistrement, ou par caméra |
 | **Timelines en plus** | une par caméra et/ou une par jour de tournage |
 
-C’est un point de départ : la timeline ne coupe pas les plans et ne choisit pas de prises.
+C’est un point de départ : la timeline ne coupe pas les plans et ne choisit pas de prises. Les plans sont rangés jour par jour ; un plan sans timecode est placé selon son heure d’enregistrement.
+
+## 🎙️ Synchro du son
+
+Avec **Synchroniser le son enregistré à part**, Resolve associe les fichiers **WAV et AIFF** retenus aux rushs du même jour de tournage, juste après l’import :
+
+| Mode | Quand l’utiliser |
+|---|---|
+| **Timecode** | enregistreur et caméras calés sur le même timecode au tournage |
+| **Forme d’onde** | pas de timecode commun, mais un son témoin audible sur les caméras |
+
+Le son caméra est conservé, et les timelines d’assemblage reprennent le son synchronisé. La synchro se fait jour par jour, car un timecode « heure du jour » se répète d’un jour à l’autre. La date d’un fichier son vient de ses métadonnées BWF, sinon de sa date de création. Le rapport final liste les jours que Resolve n’a pas confirmés.
 
 <a id="cst"></a>
 

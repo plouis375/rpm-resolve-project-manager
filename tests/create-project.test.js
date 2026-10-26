@@ -9,7 +9,7 @@ const FOLDERS = [{ id: 'Rushs', name: 'Rushs' }, { id: 'Exports', name: 'Exports
 
 // Faux Resolve : chutiers, imports, timelines et CST, avec compteurs pour les assertions.
 function fakeResolve(overrides = {}) {
-  const state = { saves: 0, timelines: [], imported: [], grades: [], existing: overrides.existing || [] };
+  const state = { saves: 0, timelines: [], imported: [], grades: [], syncs: [], existing: overrides.existing || [] };
   const makeFolder = (name) => {
     const children = [];
     return { name, children, GetName: async () => name, GetSubFolderList: async () => children };
@@ -39,9 +39,10 @@ function fakeResolve(overrides = {}) {
       return paths.map((p) => ({ path: p, GetClipProperty: async () => p }));
     }),
     ImportTimelineFromFile: async () => ({}),
+    AutoSyncAudio: overrides.autoSyncAudio || (async (items, settings) => { state.syncs.push({ paths: items.map((i) => i.path), settings }); return true; }),
     CreateTimelineFromClips: async (name, clips) => {
       const timeline = makeTimeline(name, clips.map((clip) => ({ path: clip.path })));
-      state.timelines.push({ name, count: clips.length, timeline });
+      state.timelines.push({ name, count: clips.length, paths: clips.map((clip) => clip.path), timeline });
       return timeline;
     }
   };
@@ -153,4 +154,50 @@ test('une erreur après la création du projet indique qu’il est partiellement
     assert.match(error.message, /partiellement créé/);
     return true;
   });
+});
+
+const wav = (name, extra = {}) => file(name, { extension: '.wav', category: 'Musiques', cameraBrand: '', cameraModel: '', colorProfile: '', ...extra });
+const FOLDERS_WITH_AUDIO = [...FOLDERS, { id: 'Musiques', name: 'Musiques' }];
+
+test('timeline d’assemblage dans l’ordre du timecode, toutes caméras confondues', async () => {
+  const fake = fakeResolve();
+  const selected = [
+    file('A001.mov', { timecode: '15:00:00:00' }),
+    file('A002.mov', { cameraModel: 'FX6', timecode: '09:30:00:00' }),
+    file('A003.mov', { timecode: '11:00:00:00' })
+  ];
+  await run(fake, selected, { ...baseOptions, applyCst: false, timelineOrder: 'timecode' });
+  assert.deepEqual(fake.state.timelines[0].paths, ['/src/A002.mov', '/src/A003.mov', '/src/A001.mov']);
+});
+
+test('synchronise le son direct jour par jour avec les constantes de Resolve', async () => {
+  const fake = fakeResolve();
+  const selected = [
+    file('A001.mov'), file('A002.mov', { shootingDate: '2026-09-13' }),
+    wav('SON_J1.wav'), wav('SON_J2.wav', { shootingDate: '2026-09-13' }), wav('SON_J3.wav', { shootingDate: '2026-09-14' }),
+    wav('musique.mp3', { extension: '.mp3' })
+  ];
+  const constants = { AUDIO_SYNC_MODE: 'syncMode', AUDIO_SYNC_TIMECODE: 1, AUDIO_SYNC_RETAIN_EMBEDDED_AUDIO: 'retainEmbeddedAudio', AUDIO_SYNC_RETAIN_VIDEO_METADATA: 'retainVideoMetadata' };
+  const result = await run(fake, selected, { ...baseOptions, applyCst: false, syncAudio: true, syncMode: 'timecode' }, { folders: FOLDERS_WITH_AUDIO, resolveConstants: constants });
+  assert.deepEqual(fake.state.syncs.map((s) => s.paths), [['/src/A001.mov', '/src/SON_J1.wav'], ['/src/A002.mov', '/src/SON_J2.wav']]);
+  assert.deepEqual(fake.state.syncs[0].settings, { syncMode: 1, retainEmbeddedAudio: true, retainVideoMetadata: true });
+  assert.equal(result.syncReport.unmatchedAudio, 1);
+  assert.deepEqual(result.syncReport.days.map((d) => d.ok), [true, true]);
+  assert.equal(result.syncReport.mode, 'Timecode');
+});
+
+test('une synchro refusée par Resolve est signalée sans bloquer la création', async () => {
+  const fake = fakeResolve({ autoSyncAudio: async () => false });
+  const result = await run(fake, [file('A001.mov'), wav('SON.wav')], { ...baseOptions, applyCst: false, syncAudio: true }, { folders: FOLDERS_WITH_AUDIO });
+  assert.equal(result.ok, true);
+  assert.equal(result.timelineName, 'Projet test — Assemblage');
+  assert.match(result.warning, /pas confirmé la synchro du son pour 2026-09-12/);
+});
+
+test('forme d’onde indisponible sans constante Resolve', async () => {
+  const fake = fakeResolve();
+  const result = await run(fake, [file('A001.mov'), wav('SON.wav')], { ...baseOptions, createTimeline: false, applyCst: false, syncAudio: true, syncMode: 'waveform' }, { folders: FOLDERS_WITH_AUDIO });
+  assert.equal(fake.state.syncs.length, 0);
+  assert.equal(result.syncReport.unavailable, true);
+  assert.match(result.warning, /forme d’onde/);
 });
