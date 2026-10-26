@@ -12,11 +12,12 @@ const {
   sidecarCandidates, filterSidecars, parseSidecarXml
 } = require('./media');
 const { profileFromMetadata } = require('./cst');
+const { t } = require('./t');
 const { findProxy } = require('./proxies');
 
 function throwIfAborted(signal) {
   if (signal?.aborted) {
-    const error = new Error('Opération interrompue.');
+    const error = new Error(t('Opération interrompue.'));
     error.name = 'AbortError';
     throw error;
   }
@@ -144,7 +145,7 @@ function isProxyDirectory(name) {
 async function scanDirectory(root, signal) {
   const resolved = await fs.realpath(root);
   const stat = await fs.stat(resolved);
-  if (!stat.isDirectory()) throw new Error(`Dossier source invalide : ${root}`);
+  if (!stat.isDirectory()) throw new Error(t('Dossier source invalide : {root}', { root }));
   const files = [];
   const pending = [resolved];
   while (pending.length) {

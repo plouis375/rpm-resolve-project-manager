@@ -9,6 +9,7 @@ const { checkForUpdate, RELEASE_PAGE_PREFIX } = require('./lib/updates');
 const { buildTextReport, buildCsvReport } = require('./lib/report');
 const { throwIfAborted, scanDirectory, enrichFile, verifyDuplicateContents: compareDuplicateContents } = require('./lib/scan');
 const { addWatchFolders, isProcessRunning } = require('./proxy-settings');
+const { t, setLocale } = require('./lib/t');
 const { cleanText, markDuplicates } = require('./lib/media');
 const { PROFILES } = require('./lib/cst');
 const { createProjectInResolve, safeBinName } = require('./lib/create-project');
@@ -36,8 +37,8 @@ function sendProgress(event, payload) {
 
 
 function runOperation(event, operationId, task) {
-  if (typeof operationId !== 'string' || !operationId) throw new Error('Identifiant d’opération invalide.');
-  if (operations.has(operationId)) throw new Error('Cette opération est déjà en cours.');
+  if (typeof operationId !== 'string' || !operationId) throw new Error(t('Identifiant d’opération invalide.'));
+  if (operations.has(operationId)) throw new Error(t('Cette opération est déjà en cours.'));
   const controller = new AbortController();
   const onDestroyed = () => controller.abort();
   operations.set(operationId, controller);
@@ -74,14 +75,14 @@ async function connectResolve() {
   integrationError = '';
   try {
     const initialized = await WorkflowIntegration.Initialize(PLUGIN_ID);
-    if (!initialized) throw new Error('Resolve refuse la connexion au plugin.');
+    if (!initialized) throw new Error(t('Resolve refuse la connexion au plugin.'));
     resolveObj = await WorkflowIntegration.GetResolve();
-    if (!resolveObj) throw new Error('Resolve API ne répond pas.');
+    if (!resolveObj) throw new Error(t('Resolve API ne répond pas.'));
     projectManager = await resolveObj.GetProjectManager();
-    if (!projectManager) throw new Error('Gestionnaire de projets Resolve introuvable.');
+    if (!projectManager) throw new Error(t('Gestionnaire de projets Resolve introuvable.'));
     integrationReady = true;
   } catch (error) {
-    integrationError = error.message || 'Connexion à Resolve impossible.';
+    integrationError = error.message || t('Connexion à Resolve impossible.');
     resolveObj = null;
     projectManager = null;
   }
@@ -128,8 +129,8 @@ async function scanSources(event, paths, previousScanId, activePaths, previousFi
     realPath: await fs.realpath(sourcePath).catch(() => sourcePath)
   })));
   const previous = previousScanId ? scanSnapshots.get(previousScanId) : null;
-  if (!roots.length) throw new Error('Choisis au moins un dossier source.');
-  if (previousScanId && !previous) throw new Error('Analyse expirée. Reprends la sélection des dossiers.');
+  if (!roots.length) throw new Error(t('Choisis au moins un dossier source.'));
+  if (previousScanId && !previous) throw new Error(t('Analyse expirée. Reprends la sélection des dossiers.'));
   const edits = new Map((Array.isArray(previousFiles) ? previousFiles : []).map((file) => [file.id, file]));
   const allFiles = [];
   const retained = (forceRefresh ? [] : previous || []).filter((file) => bestSourceRoot(file.filePath, rootRecords));
@@ -154,7 +155,7 @@ async function scanSources(event, paths, previousScanId, activePaths, previousFi
     seenPaths.add(key);
     return true;
   });
-  if (!uniqueFiles.length && !previousScanId) throw new Error('Aucun média reconnu dans les dossiers choisis.');
+  if (!uniqueFiles.length && !previousScanId) throw new Error(t('Aucun média reconnu dans les dossiers choisis.'));
 
   const newFiles = uniqueFiles.filter((file) => !file.id);
   const results = uniqueFiles.filter((file) => file.id);
@@ -176,7 +177,7 @@ async function scanSources(event, paths, previousScanId, activePaths, previousFi
       }
       completed += 1;
       if (completed % 5 === 0 || completed === newFiles.length) {
-        sendProgress(event, { stage: 'scan', current: completed, total: newFiles.length, label: forceRefresh ? 'Actualisation des médias' : 'Analyse des nouveaux médias' });
+        sendProgress(event, { stage: 'scan', current: completed, total: newFiles.length, label: forceRefresh ? t('Actualisation des médias') : t('Analyse des nouveaux médias') });
       }
     }
   }
@@ -198,25 +199,25 @@ async function scanSources(event, paths, previousScanId, activePaths, previousFi
 
 function verifyDuplicateContents(event, options, signal) {
   const files = scanSnapshots.get(options?.scanId);
-  if (!files) throw new Error('Analyse expirée. Reprends la sélection des dossiers.');
+  if (!files) throw new Error(t('Analyse expirée. Reprends la sélection des dossiers.'));
   return compareDuplicateContents({
     files,
     selections: options?.files,
     signal,
-    onProgress: (current, total) => sendProgress(event, { stage: 'duplicate-check', current, total, label: 'Comparaison du contenu' })
+    onProgress: (current, total) => sendProgress(event, { stage: 'duplicate-check', current, total, label: t('Comparaison du contenu') })
   });
 }
 
 function normalizeProjectName(value) {
   const name = cleanText(value).trim();
-  if (!name) throw new Error('Saisis un nom de projet.');
-  if (name.length > 100) throw new Error('Le nom du projet doit contenir 100 caractères maximum.');
-  if (/[\\/:\u0000-\u001f]/.test(name)) throw new Error('Le nom ne peut pas contenir « / », « \\ » ni « : ».');
+  if (!name) throw new Error(t('Saisis un nom de projet.'));
+  if (name.length > 100) throw new Error(t('Le nom du projet doit contenir 100 caractères maximum.'));
+  if (/[\\/:\u0000-\u001f]/.test(name)) throw new Error(t('Le nom ne peut pas contenir « / », « \\ » ni « : ».'));
   return name;
 }
 
 function defaultBinConfig() {
-  return BIN_NAMES.map((name) => ({ id: name, name }));
+  return BIN_NAMES.map((name) => ({ id: name, name: t(name) }));
 }
 
 function binPreferencesPath() {
@@ -229,7 +230,7 @@ async function loadBinPreferences() {
     return { folders: normalizeBinConfig(saved.folders), customized: true };
   } catch (error) {
     if (error.code === 'ENOENT') return { folders: defaultBinConfig(), customized: false };
-    throw new Error('La structure préférée ne peut pas être lue.');
+    throw new Error(t('La structure préférée ne peut pas être lue.'));
   }
 }
 
@@ -244,43 +245,43 @@ async function saveBinPreferences(input) {
     return { folders, customized: true };
   } catch (error) {
     await fs.unlink(temporaryPath).catch(() => {});
-    throw new Error('La structure préférée n’a pas pu être enregistrée.');
+    throw new Error(t('La structure préférée n’a pas pu être enregistrée.'));
   }
 }
 
 async function resetBinPreferences() {
   try { await fs.unlink(binPreferencesPath()); } catch (error) {
-    if (error.code !== 'ENOENT') throw new Error('La structure préférée n’a pas pu être réinitialisée.');
+    if (error.code !== 'ENOENT') throw new Error(t('La structure préférée n’a pas pu être réinitialisée.'));
   }
   return { folders: defaultBinConfig(), customized: false };
 }
 
 function normalizeBinConfig(input) {
-  const folders = Array.isArray(input) ? input : BIN_NAMES.map((name) => ({ id: name, name }));
-  if (folders.length > 60) throw new Error('Un projet ne peut pas contenir plus de 60 chutiers.');
+  const folders = Array.isArray(input) ? input : defaultBinConfig();
+  if (folders.length > 60) throw new Error(t('Un projet ne peut pas contenir plus de 60 chutiers.'));
   const ids = new Set();
   const names = new Set();
   return folders.map((folder) => {
     const id = cleanText(folder?.id).trim();
     const custom = /^custom-[0-9a-f-]{36}$/i.test(id);
-    if (!BIN_NAMES.includes(id) && !custom) throw new Error('Identifiant de chutier invalide.');
-    if (ids.has(id)) throw new Error('Deux chutiers ont le même identifiant.');
+    if (!BIN_NAMES.includes(id) && !custom) throw new Error(t('Identifiant de chutier invalide.'));
+    if (ids.has(id)) throw new Error(t('Deux chutiers ont le même identifiant.'));
     ids.add(id);
     const name = cleanText(folder?.name).replace(/\s+/g, ' ').trim();
-    if (!name || name.length > 80 || /[\\/:\u0000-\u001f]/.test(name)) throw new Error('Chaque chutier doit avoir un nom valide de 80 caractères maximum.');
+    if (!name || name.length > 80 || /[\\/:\u0000-\u001f]/.test(name)) throw new Error(t('Chaque chutier doit avoir un nom valide de 80 caractères maximum.'));
     const normalizedName = name.toLocaleLowerCase('fr');
-    if (names.has(normalizedName)) throw new Error(`Deux chutiers ne peuvent pas porter le nom « ${name} ».`);
+    if (names.has(normalizedName)) throw new Error(t('Deux chutiers ne peuvent pas porter le nom « {name} ».', { name }));
     names.add(normalizedName);
     return { id, name };
   });
 }
 
 async function createProject(event, options) {
-  if (!integrationReady || !projectManager) throw new Error(integrationError || 'Connexion à Resolve indisponible.');
-  if (creationInProgress) throw new Error('Création déjà en cours.');
+  if (!integrationReady || !projectManager) throw new Error(integrationError || t('Connexion à Resolve indisponible.'));
+  if (creationInProgress) throw new Error(t('Création déjà en cours.'));
   const name = normalizeProjectName(options?.projectName);
   const snapshot = scanSnapshots.get(options?.scanId);
-  if (!snapshot) throw new Error('Analyse expirée. Reprends la sélection des dossiers.');
+  if (!snapshot) throw new Error(t('Analyse expirée. Reprends la sélection des dossiers.'));
   const folders = normalizeBinConfig(options?.folders);
   const folderIds = new Set(folders.map((folder) => folder.id));
   const edited = new Map((options.files || []).map((file) => [file.id, file]));
@@ -292,14 +293,14 @@ async function createProject(event, options) {
       ...original,
       category,
       include,
-      cameraBrand: safeBinName(edit.cameraBrand, 'À identifier'),
-      cameraModel: safeBinName(edit.cameraModel, 'À identifier'),
-      shootingDate: /^\d{4}-\d{2}-\d{2}$/.test(edit.shootingDate || '') ? edit.shootingDate : original.shootingDate || 'Date inconnue',
+      cameraBrand: safeBinName(edit.cameraBrand, t('À identifier')),
+      cameraModel: safeBinName(edit.cameraModel, t('À identifier')),
+      shootingDate: /^\d{4}-\d{2}-\d{2}$/.test(edit.shootingDate || '') ? edit.shootingDate : original.shootingDate || t('Date inconnue'),
       colorProfile: typeof edit.colorProfile === 'string' && (edit.colorProfile === 'none' || edit.colorProfile === '' || PROFILES[edit.colorProfile]) ? edit.colorProfile : original.colorProfile || ''
     };
   }).filter((file) => file.include);
-  if (!selected.length) throw new Error('Aucun média à importer.');
-  if (selected.some((file) => !folderIds.has(file.category))) throw new Error('Un média retenu est associé à un chutier supprimé. Reclasse-le avant de créer le projet.');
+  if (!selected.length) throw new Error(t('Aucun média à importer.'));
+  if (selected.some((file) => !folderIds.has(file.category))) throw new Error(t('Un média retenu est associé à un chutier supprimé. Reclasse-le avant de créer le projet.'));
 
   creationInProgress = true;
   try {
@@ -344,12 +345,12 @@ function registerHandlers() {
     } catch (_) { return []; }
   });
   ipcMain.handle('tool:export-report', async (_event, result) => {
-    if (!result || typeof result !== 'object' || typeof result.projectName !== 'string') throw new Error('Rapport indisponible.');
-    const safeName = safeBinName(result.projectName, 'Projet');
+    if (!result || typeof result !== 'object' || typeof result.projectName !== 'string') throw new Error(t('Rapport indisponible.'));
+    const safeName = safeBinName(result.projectName, t('Projet'));
     const choice = await dialog.showSaveDialog(mainWindow, {
-      title: 'Exporter le rapport',
-      defaultPath: path.join(app.getPath('documents'), `Rapport RPM — ${safeName}.txt`),
-      filters: [{ name: 'Texte', extensions: ['txt'] }, { name: 'CSV (Excel)', extensions: ['csv'] }]
+      title: t('Exporter le rapport'),
+      defaultPath: path.join(app.getPath('documents'), `${t('Rapport RPM — {name}', { name: safeName })}.txt`),
+      filters: [{ name: t('Texte'), extensions: ['txt'] }, { name: 'CSV (Excel)', extensions: ['csv'] }]
     });
     if (choice.canceled || !choice.filePath) return null;
     const csv = path.extname(choice.filePath).toLowerCase() === '.csv';
@@ -360,11 +361,13 @@ function registerHandlers() {
   ipcMain.handle('tool:open-release', async (_event, url) => {
     if (typeof url === 'string' && url.startsWith(RELEASE_PAGE_PREFIX)) await shell.openExternal(url);
   });
+  ipcMain.on('tool:locale', (event) => { event.returnValue = app.getLocale(); });
+  ipcMain.handle('tool:set-locale', (_event, locale) => { setLocale(locale); return true; });
   ipcMain.handle('tool:reconnect', connectResolve);
   ipcMain.handle('tool:choose-sources', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
-      title: 'Choisir les dossiers de médias',
-      buttonLabel: 'Analyser les dossiers',
+      title: t('Choisir les dossiers de médias'),
+      buttonLabel: t('Analyser les dossiers'),
       properties: ['openDirectory', 'multiSelections']
     });
     return result.canceled ? [] : result.filePaths;
@@ -382,14 +385,14 @@ function registerHandlers() {
     try {
       await fs.access(PROXY_GENERATOR_APP);
       if (await isProcessRunning(PROXY_GENERATOR_EXECUTABLE)) {
-        throw new Error('Ferme Blackmagic Proxy Generator puis réessaie. Il doit être fermé pour actualiser sa liste de dossiers surveillés.');
+        throw new Error(t('Ferme Blackmagic Proxy Generator puis réessaie. Il doit être fermé pour actualiser sa liste de dossiers surveillés.'));
       }
       const settingsPath = path.join(app.getPath('home'), 'Library', 'Preferences', 'Blackmagic Design', 'Blackmagic Proxy Generator', 'ProxyGeneratorSettings.plist');
       const added = await addWatchFolders(settingsPath, sourcePaths);
       await execFileAsync('/usr/bin/open', ['-a', PROXY_GENERATOR_APP]);
       return { added };
     } catch (error) {
-      throw new Error(error.message || 'Impossible d’ajouter les dossiers ou d’ouvrir Blackmagic Proxy Generator.');
+      throw new Error(error.message || t('Impossible d’ajouter les dossiers ou d’ouvrir Blackmagic Proxy Generator.'));
     }
   });
   ipcMain.handle('tool:finish', async () => {
@@ -403,17 +406,17 @@ function registerHandlers() {
   ipcMain.handle('tool:uninstall', async () => {
     const choice = await dialog.showMessageBox(mainWindow, {
       type: 'warning',
-      buttons: ['Désinstaller', 'Annuler'],
+      buttons: [t('Désinstaller'), t('Annuler')],
       defaultId: 1,
       cancelId: 1,
-      message: 'Désinstaller RPM - Resolve Project Manager ?',
-      detail: 'Le plugin sera retiré de Resolve. Tes projets, tes médias et tes proxies ne sont pas touchés. macOS va te demander ton mot de passe.'
+      message: t('Désinstaller RPM - Resolve Project Manager ?'),
+      detail: t('Le plugin sera retiré de Resolve. Tes projets, tes médias et tes proxies ne sont pas touchés. macOS va te demander ton mot de passe.')
     });
     if (choice.response !== 0) return { ok: false, cancelled: true };
     const pluginDir = path.resolve(__dirname);
     // Garde-fou : on ne supprime que le dossier du plugin, dans le dossier des intégrations Resolve.
     if (path.basename(pluginDir) !== PLUGIN_ID || !pluginDir.includes('/Workflow Integration Plugins/')) {
-      throw new Error('Emplacement du plugin inattendu : désinstallation annulée.');
+      throw new Error(t('Emplacement du plugin inattendu : désinstallation annulée.'));
     }
     // Le chemin est passé en argument à osascript (jamais concaténé au script) et quoté par « quoted form of ».
     const script = [
@@ -425,9 +428,9 @@ function registerHandlers() {
       await execFileAsync('/usr/bin/osascript', [...script.flatMap((line) => ['-e', line]), pluginDir]);
     } catch (error) {
       if (/-128|annul|cancel/i.test(String(error.stderr || error.message))) return { ok: false, cancelled: true };
-      throw new Error('La désinstallation a échoué. Réessaie, ou supprime le dossier du plugin à la main.');
+      throw new Error(t('La désinstallation a échoué. Réessaie, ou supprime le dossier du plugin à la main.'));
     }
-    await dialog.showMessageBox(mainWindow, { type: 'info', buttons: ['OK'], message: 'Plugin désinstallé', detail: 'Redémarre DaVinci Resolve pour qu’il disparaisse du menu Workflow Integrations.' });
+    await dialog.showMessageBox(mainWindow, { type: 'info', buttons: ['OK'], message: t('Plugin désinstallé'), detail: t('Redémarre DaVinci Resolve pour qu’il disparaisse du menu Workflow Integrations.') });
     setTimeout(() => mainWindow?.close(), 100);
     return { ok: true };
   });
@@ -455,13 +458,14 @@ function createWindow() {
   mainWindow.on('close', (event) => {
     if (creationInProgress) {
       event.preventDefault();
-      mainWindow.webContents.send('tool:progress', { stage: 'error', label: 'Attends la fin de la création avant de fermer.' });
+      mainWindow.webContents.send('tool:progress', { stage: 'error', label: t('Attends la fin de la création avant de fermer.') });
     }
   });
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
 }
 
 app.whenReady().then(async () => {
+  setLocale(app.getLocale());
   registerHandlers();
   await connectResolve();
   createWindow();

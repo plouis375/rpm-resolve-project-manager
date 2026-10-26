@@ -6,10 +6,11 @@
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { SEQUENCE, SYNC_AUDIO, FRAME_RATES, cleanText, dominantFormat, nearestFrameRate, matchImported, sortForTimeline } = require('./media');
+const { t } = require('./t');
 const { PROFILES, OUTPUTS, presetFileName, COLOR_MANAGED_MODE, INPUT_COLOR_SPACES, MANAGED_TIMELINE_SPACE, MANAGED_OUTPUT_SPACES } = require('./cst');
 
 const DEFAULT_TIMEOUTS = { importMs: 120000, cstMs: 20000, syncMs: 300000 };
-const SYNC_MODES = { timecode: 'Timecode', waveform: 'Forme d’onde' };
+const SYNC_MODES = { timecode: 'Timecode', waveform: 'Forme d’onde' }; // libellés traduits à l’affichage : t(SYNC_MODES[mode])
 const IMPORT_BATCH_SIZE = 25;
 const TIMELINE_RESOLUTIONS = new Set(['1280x720', '1920x1080', '2048x1080', '3840x2160', '4096x2160', '1080x1920', '1080x1080']);
 // Couleurs de clip Resolve (type ClipColor de DaVinciResolveScript.pyi).
@@ -24,7 +25,7 @@ function safeBinName(value, fallback) {
 // Un appel Resolve bloqué ne doit pas bloquer la création : on rend la main après le délai.
 function withTimeout(promise, ms) {
   let timer;
-  const timeout = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Délai dépassé')), ms); });
+  const timeout = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(t('Délai dépassé'))), ms); });
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
@@ -39,7 +40,7 @@ async function findOrCreateFolder(mediaPool, parent, name) {
     if (await folder.GetName() === name) return folder;
   }
   const folder = await mediaPool.AddSubFolder(parent, name);
-  if (!folder) throw new Error(`Impossible de créer le chutier « ${name} ».`);
+  if (!folder) throw new Error(t('Impossible de créer le chutier « {name} ».', { name }));
   return folder;
 }
 
@@ -73,7 +74,7 @@ async function applyTimelineSettings(project, rushes, options, logger) {
   } catch (error) { warnResolve('GetSetting (timeline)', error, logger); }
   return {
     label: `${reported.width} × ${reported.height} · ${String(reported.fps).replace('.', ',')} i/s`,
-    warning: allApplied ? '' : 'Resolve n’a pas confirmé tous les réglages de timeline. Vérifie le format dans Resolve.'
+    warning: allApplied ? '' : t('Resolve n’a pas confirmé tous les réglages de timeline. Vérifie le format dans Resolve.')
   };
 }
 
@@ -100,7 +101,7 @@ async function applyColorTransforms({ project, timeline, importedRushes, output,
   for (const { item, file } of pairs) {
     const profile = file?.colorProfile || null;
     if (profile === 'none') { report.skipped += 1; continue; }
-    if (!PROFILES[profile]) { report.unrecognized.push(file?.name || 'Plan sans rush associé'); continue; }
+    if (!PROFILES[profile]) { report.unrecognized.push(file?.name || t('Plan sans rush associé')); continue; }
     if (!groups.has(profile)) groups.set(profile, []);
     groups.get(profile).push({ item, file });
   }
@@ -168,9 +169,9 @@ async function groupByDestination(mediaPool, bins, importable) {
     let destination = bins[file.category];
     let key = file.category;
     if (file.category === 'Rushs') {
-      const brand = safeBinName(file.cameraBrand, 'À identifier');
-      const model = safeBinName(file.cameraModel, 'À identifier');
-      const date = DATE_PATTERN.test(file.shootingDate) ? file.shootingDate : 'Date inconnue';
+      const brand = safeBinName(file.cameraBrand, t('À identifier'));
+      const model = safeBinName(file.cameraModel, t('À identifier'));
+      const date = DATE_PATTERN.test(file.shootingDate) ? file.shootingDate : t('Date inconnue');
       const brandBin = await findOrCreateFolder(mediaPool, bins.Rushs, brand);
       const modelBin = await findOrCreateFolder(mediaPool, brandBin, model);
       destination = await findOrCreateFolder(mediaPool, modelBin, date);
@@ -192,7 +193,7 @@ async function importGroups({ mediaPool, groups, totalBatches, progress, logger,
   let completedBatches = 0;
   for (const group of groups) {
     const selectedFolder = await mediaPool.SetCurrentFolder(group.destination);
-    if (!selectedFolder) throw new Error('Resolve n’a pas pu sélectionner un chutier.');
+    if (!selectedFolder) throw new Error(t('Resolve n’a pas pu sélectionner un chutier.'));
     for (let offset = 0; offset < group.files.length; offset += IMPORT_BATCH_SIZE) {
       const batch = group.files.slice(offset, offset + IMPORT_BATCH_SIZE);
       let result = null;
@@ -205,7 +206,7 @@ async function importGroups({ mediaPool, groups, totalBatches, progress, logger,
       if (result === null) {
         unverified.push(...batch.map((file) => file.name));
         completedBatches += 1;
-        progress('import', completedBatches, Math.max(totalBatches, 1), 'Import des médias dans Resolve');
+        progress('import', completedBatches, Math.max(totalBatches, 1), t('Import des médias dans Resolve'));
         continue;
       }
       const items = (Array.isArray(result) ? result : []).filter(Boolean);
@@ -232,7 +233,7 @@ async function importGroups({ mediaPool, groups, totalBatches, progress, logger,
         else if (SYNC_AUDIO.has(file.extension)) importedAudio.push({ file, item: items[index] });
       }
       completedBatches += 1;
-      progress('import', completedBatches, Math.max(totalBatches, 1), 'Import des médias dans Resolve');
+      progress('import', completedBatches, Math.max(totalBatches, 1), t('Import des médias dans Resolve'));
     }
   }
   return { importedRushes, importedAudio, failures, unverified, completedBatches };
@@ -244,14 +245,14 @@ async function importSequences({ mediaPool, sequenceFiles, bins, startCount, tot
   for (const file of sequenceFiles) {
     try {
       const selectedFolder = await mediaPool.SetCurrentFolder(bins[file.category]);
-      if (!selectedFolder) throw new Error('Resolve n’a pas pu sélectionner le chutier de destination.');
+      if (!selectedFolder) throw new Error(t('Resolve n’a pas pu sélectionner le chutier de destination.'));
       const timeline = await mediaPool.ImportTimelineFromFile(file.filePath);
       if (!timeline) sequenceFailures.push(file.name);
     } catch (_) {
       sequenceFailures.push(file.name);
     }
     completedBatches += 1;
-    progress('import', completedBatches, Math.max(totalBatches, 1), 'Import des séquences');
+    progress('import', completedBatches, Math.max(totalBatches, 1), t('Import des séquences'));
   }
   return sequenceFailures;
 }
@@ -279,11 +280,11 @@ function audioSyncSettings(mode, constants = {}) {
 // d’un jour de tournage à l’autre, et la forme d’onde est plus rapide et plus sûre sur un petit lot.
 async function syncAudio({ mediaPool, importedRushes, importedAudio, mode, constants, progress, logger, syncMs }) {
   const syncMode = SYNC_MODES[mode] ? mode : 'timecode';
-  const report = { mode: SYNC_MODES[syncMode], days: [], audioCount: importedAudio.length, unmatchedAudio: 0, unavailable: false };
+  const report = { mode: t(SYNC_MODES[syncMode]), days: [], audioCount: importedAudio.length, unmatchedAudio: 0, unavailable: false };
   if (!importedAudio.length || !importedRushes.length) return report;
   const settings = audioSyncSettings(syncMode, constants);
   if (!settings) { report.unavailable = true; return report; }
-  const dayOf = ({ file }) => DATE_PATTERN.test(file.shootingDate || '') ? file.shootingDate : 'Date inconnue';
+  const dayOf = ({ file }) => DATE_PATTERN.test(file.shootingDate || '') ? file.shootingDate : t('Date inconnue');
   const days = new Map();
   for (const [kind, entries] of [['video', importedRushes], ['audio', importedAudio]]) {
     for (const entry of entries) {
@@ -296,12 +297,12 @@ async function syncAudio({ mediaPool, importedRushes, importedAudio, mode, const
   report.unmatchedAudio = [...days.values()].filter((group) => !group.video.length).reduce((sum, group) => sum + group.audio.length, 0);
   for (let index = 0; index < plans.length; index += 1) {
     const [day, group] = plans[index];
-    progress('sync', index, plans.length, `Synchronisation du son · ${day}`);
+    progress('sync', index, plans.length, t('Synchronisation du son · {day}', { day }));
     let ok = false;
     try { ok = Boolean(await withTimeout(mediaPool.AutoSyncAudio([...group.video, ...group.audio], settings), syncMs)); } catch (error) { warnResolve(`AutoSyncAudio ${day}`, error, logger); }
     report.days.push({ day, ok, video: group.video.length, audio: group.audio.length });
   }
-  progress('sync', plans.length, plans.length, 'Synchronisation du son');
+  progress('sync', plans.length, plans.length, t('Synchronisation du son'));
   return report;
 }
 
@@ -315,32 +316,32 @@ async function buildTimelines({ project, mediaPool, bins, root, name, importedRu
   let colorReport = null;
   if (options.createTimeline && importedRushes.length) {
     const selectedFolder = await mediaPool.SetCurrentFolder(bins.Séquences || root);
-    if (!selectedFolder) throw new Error('Resolve n’a pas pu sélectionner le chutier Séquences.');
-    timelineName = `${name} — Assemblage`;
+    if (!selectedFolder) throw new Error(t('Resolve n’a pas pu sélectionner le chutier Séquences.'));
+    timelineName = `${name} — ${t('Assemblage')}`;
     const timeline = await mediaPool.CreateTimelineFromClips(timelineName, importedRushes.map(({ item }) => item));
     if (!timeline) {
       timelineName = '';
-      timelineWarning = 'Resolve n’a pas créé la timeline. Le projet et les médias sont conservés.';
+      timelineWarning = t('Resolve n’a pas créé la timeline. Le projet et les médias sont conservés.');
     } else {
       timelineFormat = timelineSettings.label;
       await checkpoint();
       if (options.applyCst && options.colorMethod !== 'managed') {
-        progress('grade', 0, 1, 'Application des Color Space Transform');
+        progress('grade', 0, 1, t('Application des Color Space Transform'));
         colorReport = await applyColorTransforms({ project, timeline, importedRushes, output: options.cstOutput, presetDir, logger, cstMs });
         colorReport.output = OUTPUTS[options.cstOutput] || OUTPUTS.rec709a;
-        progress('grade', 1, 1, 'Application des Color Space Transform');
+        progress('grade', 1, 1, t('Application des Color Space Transform'));
       }
     }
   } else if (options.createTimeline) {
-    timelineWarning = 'Aucun rush vidéo retenu. La timeline d’assemblage n’a pas été créée.';
+    timelineWarning = t('Aucun rush vidéo retenu. La timeline d’assemblage n’a pas été créée.');
   }
 
   // Timelines supplémentaires : une par caméra et/ou une par jour de tournage.
   const extraTimelines = [];
   if (options.createTimeline && importedRushes.length && (options.timelinePerCamera || options.timelinePerDay)) {
     const groupings = [];
-    if (options.timelinePerCamera) groupings.push((file) => `${safeBinName(file.cameraBrand, 'À identifier')} ${safeBinName(file.cameraModel, '')}`.trim());
-    if (options.timelinePerDay) groupings.push((file) => DATE_PATTERN.test(file.shootingDate) ? file.shootingDate : 'Date inconnue');
+    if (options.timelinePerCamera) groupings.push((file) => `${safeBinName(file.cameraBrand, t('À identifier'))} ${safeBinName(file.cameraModel, '')}`.trim());
+    if (options.timelinePerDay) groupings.push((file) => DATE_PATTERN.test(file.shootingDate) ? file.shootingDate : t('Date inconnue'));
     const plans = [];
     for (const keyOf of groupings) {
       const byKey = new Map();
@@ -355,7 +356,7 @@ async function buildTimelines({ project, mediaPool, bins, root, name, importedRu
     let extraCstFailed = 0;
     for (let index = 0; index < plans.length; index += 1) {
       const { key, entries } = plans[index];
-      progress('grade', index, plans.length, `Timeline ${key}`);
+      progress('grade', index, plans.length, t('Timeline {key}', { key }));
       try {
         await mediaPool.SetCurrentFolder(bins.Séquences || root);
         const extraName = `${name} — ${key}`;
@@ -368,8 +369,8 @@ async function buildTimelines({ project, mediaPool, bins, root, name, importedRu
         }
       } catch (_) { extraFailed += 1; }
     }
-    if (extraFailed) timelineWarning = [timelineWarning, `${extraFailed} timeline(s) par caméra ou par jour n’ont pas été créées.`].filter(Boolean).join(' ');
-    if (extraCstFailed) timelineWarning = [timelineWarning, `Resolve n’a pas appliqué le CST sur ${extraCstFailed} plan(s) des timelines par caméra ou par jour.`].filter(Boolean).join(' ');
+    if (extraFailed) timelineWarning = [timelineWarning, t('{n} timeline(s) par caméra ou par jour n’ont pas été créées.', { n: extraFailed })].filter(Boolean).join(' ');
+    if (extraCstFailed) timelineWarning = [timelineWarning, t('Resolve n’a pas appliqué le CST sur {n} plan(s) des timelines par caméra ou par jour.', { n: extraCstFailed })].filter(Boolean).join(' ');
     // Revient sur l’assemblage principal.
     try {
       const count = await project.GetTimelineCount();
@@ -385,7 +386,7 @@ async function buildTimelines({ project, mediaPool, bins, root, name, importedRu
 // Un clip multicam par jour de tournage : un angle par rush, calés par timecode ou par forme d’onde.
 // Les constantes resolve.MULTICAM_* viennent de l’objet Resolve ; sans elles, on laisse les valeurs par défaut.
 function multicamOptions(day, mode, constants = {}) {
-  const settings = { name: `${day} — Multicam`, createBinForSourceClips: false };
+  const settings = { name: `${day} — ${t('Multicam')}`, createBinForSourceClips: false };
   const sync = mode === 'waveform' ? constants.MULTICAM_ANGLE_SYNC_AUDIO : constants.MULTICAM_ANGLE_SYNC_TIMECODE;
   if (sync !== undefined) settings.angleSyncMode = sync;
   if (constants.MULTICAM_ANGLE_NAME_FILE !== undefined) settings.angleNameMode = constants.MULTICAM_ANGLE_NAME_FILE;
@@ -397,7 +398,7 @@ async function createMulticamClips({ mediaPool, bins, root, importedRushes, mode
   const report = { days: [], skipped: [] };
   const days = new Map();
   for (const entry of importedRushes) {
-    const day = DATE_PATTERN.test(entry.file.shootingDate || '') ? entry.file.shootingDate : 'Date inconnue';
+    const day = DATE_PATTERN.test(entry.file.shootingDate || '') ? entry.file.shootingDate : t('Date inconnue');
     if (!days.has(day)) days.set(day, []);
     days.get(day).push(entry);
   }
@@ -405,21 +406,21 @@ async function createMulticamClips({ mediaPool, bins, root, importedRushes, mode
   try { await mediaPool.SetCurrentFolder(bins.Séquences || root); } catch (error) { warnResolve('SetCurrentFolder (multicam)', error, logger); }
   for (let index = 0; index < plans.length; index += 1) {
     const [day, entries] = plans[index];
-    progress('multicam', index, plans.length, `Clip multicam · ${day}`);
+    progress('multicam', index, plans.length, t('Clip multicam · {day}', { day }));
     if (entries.length < 2) { report.skipped.push(day); continue; }
     let created = null;
     try { created = await withTimeout(mediaPool.CreateMulticamClip(entries.map(({ item }) => item), multicamOptions(day, mode, constants)), syncMs); } catch (error) { warnResolve(`CreateMulticamClip ${day}`, error, logger); }
     report.days.push({ day, ok: Array.isArray(created) ? created.length > 0 : Boolean(created), angles: entries.length });
   }
-  progress('multicam', plans.length, plans.length, 'Clips multicam');
+  progress('multicam', plans.length, plans.length, t('Clips multicam'));
   return report;
 }
 
 function multicamWarning(report) {
   if (!report) return '';
-  if (!report.days.length) return 'Multicam : aucun jour ne réunit au moins deux rushs.';
+  if (!report.days.length) return t('Multicam : aucun jour ne réunit au moins deux rushs.');
   const failed = report.days.filter((day) => !day.ok).map((day) => day.day);
-  return failed.length ? `Resolve n’a pas créé le clip multicam pour ${failed.join(', ')}.` : '';
+  return failed.length ? t('Resolve n’a pas créé le clip multicam pour {days}.', { days: failed.join(', ') }) : '';
 }
 
 // Associe les proxies déjà générés (sous-dossier « proxy ») à leur rush.
@@ -478,16 +479,16 @@ async function writeMetadata({ importedRushes, logger, cstMs }) {
 
 function metadataWarning(report) {
   const keys = Object.keys(report?.refused || {});
-  return keys.length ? `Resolve a refusé des métadonnées : ${keys.map((key) => `« ${key} » (${report.refused[key]} plan(s))`).join(', ')}.` : '';
+  return keys.length ? t('Resolve a refusé des métadonnées : {list}.', { list: keys.map((key) => t('« {key} » ({n} plan(s))', { key, n: report.refused[key] })).join(', ') }) : '';
 }
 
 function syncWarning(report) {
   if (!report) return '';
-  if (report.unavailable) return 'Synchro du son impossible : cette version de Resolve n’expose pas la synchro par forme d’onde. Essaie le timecode.';
-  if (!report.audioCount) return 'Synchro du son : aucun fichier WAV ou AIFF importé.';
-  if (!report.days.length) return 'Synchro du son : aucun jour de tournage ne réunit à la fois image et son direct. Vérifie les dates.';
+  if (report.unavailable) return t('Synchro du son impossible : cette version de Resolve n’expose pas la synchro par forme d’onde. Essaie le timecode.');
+  if (!report.audioCount) return t('Synchro du son : aucun fichier WAV ou AIFF importé.');
+  if (!report.days.length) return t('Synchro du son : aucun jour de tournage ne réunit à la fois image et son direct. Vérifie les dates.');
   const failed = report.days.filter((day) => !day.ok).map((day) => day.day);
-  return failed.length ? `Resolve n’a pas confirmé la synchro du son pour ${failed.join(', ')}. Vérifie ces jours dans le Media Pool.` : '';
+  return failed.length ? t('Resolve n’a pas confirmé la synchro du son pour {days}. Vérifie ces jours dans le Media Pool.', { days: failed.join(', ') }) : '';
 }
 
 // Crée le projet et renvoie le rapport. `selected` = fichiers retenus, `folders` = chutiers validés.
@@ -502,30 +503,30 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
   let projectCreated = false;
   try {
     const projects = await projectManager.GetProjectListInCurrentFolder();
-    if ((projects || []).includes(name)) throw new Error(`Un projet nommé « ${name} » existe déjà dans ce dossier Resolve.`);
+    if ((projects || []).includes(name)) throw new Error(t('Un projet nommé « {name} » existe déjà dans ce dossier Resolve.', { name }));
     let currentProject = null;
     try { currentProject = await projectManager.GetCurrentProject(); } catch (_) {}
     let savedProject = '';
     if (currentProject) {
       savedProject = await currentProject.GetName();
       const saved = await projectManager.SaveProject();
-      if (!saved) throw new Error(`Resolve n’a pas pu enregistrer le projet ouvert « ${savedProject} ».`);
+      if (!saved) throw new Error(t('Resolve n’a pas pu enregistrer le projet ouvert « {name} ».', { name: savedProject }));
     }
 
-    progress('project', 0, 1, 'Création du projet Resolve');
+    progress('project', 0, 1, t('Création du projet Resolve'));
     const project = await projectManager.CreateProject(name);
-    if (!project) throw new Error(`Resolve n’a pas créé le projet « ${name} ». Vérifie la liste des projets.`);
+    if (!project) throw new Error(t('Resolve n’a pas créé le projet « {name} ». Vérifie la liste des projets.', { name }));
     projectCreated = true;
     const mediaPool = await project.GetMediaPool();
-    if (!mediaPool) throw new Error('Projet créé, mais chutier principal inaccessible.');
+    if (!mediaPool) throw new Error(t('Projet créé, mais chutier principal inaccessible.'));
     const root = await mediaPool.GetRootFolder();
-    if (!root) throw new Error('Projet créé, mais chutier principal inaccessible.');
+    if (!root) throw new Error(t('Projet créé, mais chutier principal inaccessible.'));
 
     const bins = {};
     for (let index = 0; index < folders.length; index += 1) {
       const folder = folders[index];
       bins[folder.id] = await findOrCreateFolder(mediaPool, root, folder.name);
-      progress('bins', index + 1, folders.length, `Création du chutier ${folder.name}`);
+      progress('bins', index + 1, folders.length, t('Création du chutier {name}', { name: folder.name }));
     }
 
     // Le format de timeline doit être fixé AVANT l’import : Resolve verrouille la
@@ -535,7 +536,7 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
     if (options.settingsPreset) {
       let ok = false;
       try { ok = Boolean(await withTimeout(project.SetProjectSettingsPreset(options.settingsPreset), cstMs)); } catch (error) { warnResolve('SetProjectSettingsPreset', error, logger); }
-      if (!ok) presetWarning = `Resolve n’a pas appliqué le preset de réglages « ${options.settingsPreset} ».`;
+      if (!ok) presetWarning = t('Resolve n’a pas appliqué le preset de réglages « {name} ».', { name: options.settingsPreset });
     }
 
     const managed = Boolean(options.applyCst) && options.colorMethod === 'managed';
@@ -599,7 +600,7 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
     let timelineWarning = timelines.timelineWarning;
 
     const saved = await projectManager.SaveProject();
-    if (!saved) timelineWarning = [timelineWarning, 'Le projet a été créé, mais Resolve n’a pas confirmé son enregistrement.'].filter(Boolean).join(' ');
+    if (!saved) timelineWarning = [timelineWarning, t('Le projet a été créé, mais Resolve n’a pas confirmé son enregistrement.')].filter(Boolean).join(' ');
     const { failures, unverified } = imported;
     return {
       ok: true,
@@ -626,22 +627,26 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
       warning: [presetWarning,
         timelineWarning,
         metadataWarning(metadataReport),
-        proxyReport?.failed.length ? `Resolve n’a pas lié le proxy de ${proxyReport.failed.length} plan(s) (${proxyReport.failed.slice(0, 4).join(', ')}${proxyReport.failed.length > 4 ? '…' : ''}).` : '',
-        clipColorReport?.failed ? `Resolve n’a pas appliqué la couleur de clip à ${clipColorReport.failed} plan(s).` : '',
+        proxyReport?.failed.length ? t('Resolve n’a pas lié le proxy de {n} plan(s) ({names}).', { n: proxyReport.failed.length, names: `${proxyReport.failed.slice(0, 4).join(', ')}${proxyReport.failed.length > 4 ? '…' : ''}` }) : '',
+        clipColorReport?.failed ? t('Resolve n’a pas appliqué la couleur de clip à {n} plan(s).', { n: clipColorReport.failed }) : '',
         syncWarning(syncReport),
         multicamWarning(multicamReport),
-        managedReport?.refusedSettings.length ? `Resolve a refusé des réglages de gestion couleur : ${managedReport.refusedSettings.join(', ')}.` : '',
-        (managedReport || colorReport)?.unrecognized.length ? `${(managedReport || colorReport).unrecognized.length} plan(s) sans ${managedReport ? 'espace d’entrée' : 'CST'} : caméra non reconnue.` : '',
-        (managedReport || colorReport)?.failed.length ? `Resolve n’a pas appliqué ${managedReport ? 'l’espace d’entrée' : 'le CST'} sur ${(managedReport || colorReport).failed.length} plan(s)${managedReport ? ` (${managedReport.failed.slice(0, 4).join(', ')}${managedReport.failed.length > 4 ? '…' : ''})` : ''}.` : '',
-        failures.length ? `${failures.length} média(s) n’ont pas été importés.` : '',
-        unverified.length ? `${unverified.length} média(s) à vérifier : Resolve n’a pas confirmé leur import (${unverified.slice(0, 6).join(', ')}${unverified.length > 6 ? '…' : ''}).` : '',
-        sequenceFailures.length ? `${sequenceFailures.length} séquence(s) n’ont pas été importées.` : ''].filter(Boolean).join(' '),
+        managedReport?.refusedSettings.length ? t('Resolve a refusé des réglages de gestion couleur : {list}.', { list: managedReport.refusedSettings.join(', ') }) : '',
+        (managedReport || colorReport)?.unrecognized.length ? (managedReport
+          ? t('{n} plan(s) sans espace d’entrée : caméra non reconnue.', { n: managedReport.unrecognized.length })
+          : t('{n} plan(s) sans CST : caméra non reconnue.', { n: colorReport.unrecognized.length })) : '',
+        (managedReport || colorReport)?.failed.length ? (managedReport
+          ? t('Resolve n’a pas appliqué l’espace d’entrée sur {n} plan(s) ({names}).', { n: managedReport.failed.length, names: `${managedReport.failed.slice(0, 4).join(', ')}${managedReport.failed.length > 4 ? '…' : ''}` })
+          : t('Resolve n’a pas appliqué le CST sur {n} plan(s).', { n: colorReport.failed.length })) : '',
+        failures.length ? t('{n} média(s) n’ont pas été importés.', { n: failures.length }) : '',
+        unverified.length ? t('{n} média(s) à vérifier : Resolve n’a pas confirmé leur import ({names}).', { n: unverified.length, names: `${unverified.slice(0, 6).join(', ')}${unverified.length > 6 ? '…' : ''}` }) : '',
+        sequenceFailures.length ? t('{n} séquence(s) n’ont pas été importées.', { n: sequenceFailures.length }) : ''].filter(Boolean).join(' '),
       savedProject
     };
   } catch (error) {
     if (projectCreated) {
       try { await projectManager.SaveProject(); } catch (_) {}
-      throw new Error(`${error.message} Le projet « ${name} » peut être partiellement créé. Vérifie-le dans Resolve avant de relancer l’assistant.`);
+      throw new Error(`${error.message} ${t('Le projet « {name} » peut être partiellement créé. Vérifie-le dans Resolve avant de relancer l’assistant.', { name })}`);
     }
     throw error;
   }

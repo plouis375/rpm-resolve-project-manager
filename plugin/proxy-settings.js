@@ -3,6 +3,8 @@ const { promisify } = require('node:util');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
+const { t } = require('./lib/t');
+
 const execFileAsync = promisify(execFile);
 
 async function isProcessRunning(executable) {
@@ -16,12 +18,12 @@ async function isProcessRunning(executable) {
 
 async function addWatchFolders(settingsPath, sourcePaths) {
   if (!Array.isArray(sourcePaths) || !sourcePaths.length || sourcePaths.some((source) => typeof source !== 'string')) {
-    throw new Error('Aucun dossier source valide à ajouter.');
+    throw new Error(t('Aucun dossier source valide à ajouter.'));
   }
   const folders = [];
   for (const source of sourcePaths) {
     const folder = await fs.realpath(path.resolve(source));
-    if (!(await fs.stat(folder)).isDirectory()) throw new Error(`Ce chemin n’est pas un dossier : ${folder}`);
+    if (!(await fs.stat(folder)).isDirectory()) throw new Error(t('Ce chemin n’est pas un dossier : {folder}', { folder }));
     if (!folders.includes(folder)) folders.push(folder);
   }
 
@@ -35,12 +37,12 @@ async function addWatchFolders(settingsPath, sourcePaths) {
     const { stdout } = await execFileAsync('/usr/bin/plutil', ['-convert', 'json', '-o', '-', settingsPath]);
     settings = JSON.parse(stdout);
   } catch (error) {
-    if (error.code !== 'ENOENT') throw new Error('Impossible de lire les préférences de Blackmagic Proxy Generator.');
+    if (error.code !== 'ENOENT') throw new Error(t('Impossible de lire les préférences de Blackmagic Proxy Generator.'));
   }
 
   const watchFolders = settings.watchFolderList ?? [];
   if (!Array.isArray(watchFolders) || watchFolders.some((folder) => typeof folder !== 'string')) {
-    throw new Error('La liste des dossiers surveillés de Blackmagic Proxy Generator est invalide.');
+    throw new Error(t('La liste des dossiers surveillés de Blackmagic Proxy Generator est invalide.'));
   }
   const existing = new Set(watchFolders.map((folder) => path.resolve(folder)));
   const added = folders.filter((folder) => !existing.has(folder));

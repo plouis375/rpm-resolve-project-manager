@@ -278,3 +278,5 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); }
   .table-heading { min-height: 42px; }
   .media-table td { height: 49px; }
 }
+label[for="languageSelect"] { display: block; margin-top: 20px; }
+#languageSelect { width: 220px; }

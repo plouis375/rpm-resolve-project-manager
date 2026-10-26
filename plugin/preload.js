@@ -1,6 +1,8 @@
 const { contextBridge, ipcRenderer } = require('electron/renderer');
 
 contextBridge.exposeInMainWorld('projectTool', {
+  locale: ipcRenderer.sendSync('tool:locale'),
+  setLocale: (locale) => ipcRenderer.invoke('tool:set-locale', locale),
   getStatus: () => ipcRenderer.invoke('tool:status'),
   loadBinPreferences: () => ipcRenderer.invoke('tool:load-bin-preferences'),
   saveBinPreferences: (folders) => ipcRenderer.invoke('tool:save-bin-preferences', folders),

@@ -1,5 +1,11 @@
 # Historique des versions
 
+## v0.32.0 — 26 octobre 2026
+
+- **Interface en anglais.** L’assistant existe en français et en anglais. Il suit la langue de macOS (`app.getLocale()`) : français si le système est en français, anglais sinon. Une liste **Langue** à la première étape permet de choisir (Automatique, Français, English) ; le choix est mémorisé.
+- Les textes sont sortis dans `plugin/i18n/` : le texte français sert de clé, `plugin/i18n/en.js` contient les traductions. Les messages du rapport final, les avertissements Resolve, le rapport exporté et les boîtes de dialogue suivent aussi la langue. Les noms des chutiers de base sont traduits (Rushes, Sound, Elements, Sequences, Music) ; une structure préférée déjà enregistrée garde ses noms.
+- Un README en anglais (`README.en.md`) est ajouté. Des tests vérifient que chaque texte de l’interface et du code a sa traduction.
+
 ## v0.31.1 — 26 octobre 2026
 
 - Interne : l’analyse des médias (lecture ffprobe et Spotlight, parcours des dossiers, enrichissement des fichiers, comparaison des doublons par empreinte) est sortie de `main.js` vers `plugin/lib/scan.js` et couverte par des tests avec des sorties ffprobe et mdls enregistrées (`tests/scan.test.js`). Aucun changement de comportement.

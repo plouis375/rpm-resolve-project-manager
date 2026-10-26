@@ -5,7 +5,7 @@ Coche chaque point une fois livré, avec la version correspondante.
 
 ## Règles de travail
 
-- **Une version mineure par fonction ajoutée** (v0.21.0, v0.22.0…), une version de patch pour un correctif seul. À chaque version : `plugin/package.json`, `plugin/manifest.xml`, le `vX.Y` du pied de page dans `plugin/index.html`, une entrée en tête de `CHANGELOG.md` et le README si le comportement change.
+- **Une version mineure par fonction ajoutée** (v0.21.0, v0.22.0…), une version de patch pour un correctif seul. À chaque version : `plugin/package.json` (le build recopie la version dans le manifeste et le pied de page ; `plugin/manifest.xml` et `plugin/index.html` restent alignés, un test le vérifie), une entrée en tête de `CHANGELOG.md` et les deux README si le comportement change. Tout nouveau texte visible passe par `t('texte français')` avec sa traduction dans `plugin/i18n/en.js` (un test vérifie la couverture).
 - La logique va dans `plugin/lib/` (sans Electron ni Resolve) et se teste avec `npm test`, en passant par le faux Resolve de `tests/create-project.test.js`.
 - Un appel Resolve qui bloque ou échoue ne doit jamais bloquer la création : délai avec `withTimeout`, log avec `warnResolve`, avertissement dans le rapport final.
 - Vérifier chaque fonction de l'API dans la doc installée : `/Library/Application Support/Blackmagic Design/DaVinci Resolve/Developer/Scripting/` (`README.md`, `CHANGELOG.md`, `DaVinciResolveScript.pyi`). Les constantes `resolve.*` se lisent sur l'objet Resolve, comme `readResolveConstants()` dans `plugin/main.js`.
@@ -75,7 +75,7 @@ Coche chaque point une fois livré, avec la version correspondante.
 - [x] (testé, aucun changement nécessaire) Le tableau des sources est reconstruit en `innerHTML` à chaque modification (pagination de 160 lignes). Mesuré dans le navigateur avec 5 000 fichiers : rendu du tableau 15 à 20 ms, aperçu du Media Pool 18 ms ; avec 20 000 fichiers : 22 ms et 34 ms. La pagination suffit, la virtualisation n’apporterait rien.
 
 ### 4.4 Interface en anglais
-- [ ] Sortir les textes dans un fichier de traductions et choisir la langue selon `app.getLocale()`, avec un sélecteur. Prévoir le README anglais.
+- [x] (v0.32.0) Sortir les textes dans un fichier de traductions et choisir la langue selon `app.getLocale()`, avec un sélecteur. Prévoir le README anglais.
 
 ## 5. Côté code
 

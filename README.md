@@ -3,10 +3,14 @@
 </p>
 
 <p align="center">
+  <b>Français</b> · <a href="README.en.md">English</a>
+</p>
+
+<p align="center">
   <a href="https://github.com/plouis375/rpm-resolve-project-manager/releases/latest"><img alt="Dernière version" src="https://img.shields.io/github/v/release/plouis375/rpm-resolve-project-manager?style=flat-square&color=f0822a&labelColor=242424&label=version"></a>
   <img alt="macOS" src="https://img.shields.io/badge/macOS-Intel%20%26%20Apple%20Silicon-ededed?style=flat-square&logo=apple&logoColor=ededed&labelColor=242424">
   <img alt="DaVinci Resolve Studio" src="https://img.shields.io/badge/DaVinci%20Resolve%20Studio-21.1-ededed?style=flat-square&labelColor=242424">
-  <img alt="Langue" src="https://img.shields.io/badge/interface-fran%C3%A7ais-ededed?style=flat-square&labelColor=242424">
+  <img alt="Langue" src="https://img.shields.io/badge/interface-fran%C3%A7ais%20%C2%B7%20English-ededed?style=flat-square&labelColor=242424">
 </p>
 
 <h3 align="center">De la carte mémoire à la timeline, en quatre étapes.</h3>
@@ -94,6 +98,14 @@
 - Une bibliothèque de projets Resolve accessible.
 - Les médias source accessibles depuis ce Mac (disque local ou volume monté).
 - `ffprobe` est inclus, universel Intel et Apple Silicon. S’il ne peut pas tourner, le plugin tente une analyse partielle avec Spotlight.
+
+</details>
+
+<details>
+<summary><b>Langue</b></summary>
+<br>
+
+L’interface existe en **français et en anglais**. Elle suit la langue de macOS par défaut (français, sinon anglais). Change-la avec la liste **Langue** de la première étape ; le choix est mémorisé. Le [README en anglais](README.en.md) est aussi disponible.
 
 </details>
 
@@ -305,13 +317,13 @@ Les fichiers cachés et les sous-dossiers `Proxy` sont ignorés. Un XML sidecar 
 <summary><b>Structure, tests et publication</b></summary>
 <br>
 
-- Code du plugin : [`plugin/`](plugin/). Logique de classement : [`plugin/lib/media.js`](plugin/lib/media.js). Création du projet : [`plugin/lib/create-project.js`](plugin/lib/create-project.js).
+- Code du plugin : [`plugin/`](plugin/). Logique de classement : [`plugin/lib/media.js`](plugin/lib/media.js). Création du projet : [`plugin/lib/create-project.js`](plugin/lib/create-project.js). Traductions : [`plugin/i18n/`](plugin/i18n/) (le texte français sert de clé, `en.js` contient l’anglais).
 - Tests : `npm test` (Node 20+, sans Resolve). Les rushs de `rush test/` restent locaux et ne sont pas versionnés.
 - `package.command` (réservé au développeur) produit `dist/RPM-Resolve-Project-Manager-vX.Y.Z.pkg`.
 
 **Publier une version**
 
-1. Mets à jour la version dans `plugin/package.json` et `plugin/manifest.xml`, puis ajoute une entrée dans `CHANGELOG.md`.
+1. Mets à jour la version dans `plugin/package.json` (le build la recopie dans le manifeste et le pied de page de l’interface), puis ajoute une entrée dans `CHANGELOG.md`.
 2. Committe les changements.
 3. Lance `bash package.command` pour fabriquer le `.pkg`.
 4. Crée le tag et la release GitHub avec le `.pkg` en pièce jointe.

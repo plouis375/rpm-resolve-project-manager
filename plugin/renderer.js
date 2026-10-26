@@ -1,4 +1,15 @@
-const DEFAULT_FOLDERS = ['Rushs', 'Son', 'Assets', 'Éléments', 'Séquences', 'Musiques', 'Exports'].map((name) => ({ id: name, name, core: true }));
+// Langue de l'interface : choix mémorisé, sinon langue du système (français ou anglais).
+const LANGUAGE = (() => {
+  let saved = 'auto';
+  try { saved = localStorage.getItem('rpm.language') || 'auto'; } catch (_) {}
+  return saved === 'fr' || saved === 'en' ? saved : RPM_I18N.normalizeLocale(window.projectTool.locale);
+})();
+const t = RPM_I18N.create(LANGUAGE, { en: RPM_EN });
+RPM_I18N.translateDocument(document, t);
+window.projectTool.setLocale(LANGUAGE);
+const NUMBER_LOCALE = LANGUAGE === 'fr' ? 'fr' : 'en';
+
+const DEFAULT_FOLDERS = ['Rushs', 'Son', 'Assets', 'Éléments', 'Séquences', 'Musiques', 'Exports'].map((name) => ({ id: name, name: t(name), core: true }));
 const PAGE_SIZE = 160;
 const state = {
   step: 1,
@@ -30,12 +41,12 @@ const $ = (id) => document.getElementById(id);
 const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 
 function bytesLabel(bytes) {
-  if (bytes < 1024) return `${bytes} o`;
-  const units = ['Ko', 'Mo', 'Go', 'To'];
+  if (bytes < 1024) return t('{n} o', { n: bytes });
+  const units = [t('Ko'), t('Mo'), t('Go'), t('To')];
   let value = bytes / 1024;
   let index = 0;
   while (value >= 1024 && index < units.length - 1) { value /= 1024; index += 1; }
-  return `${value.toFixed(1).replace('.', ',')} ${units[index]}`;
+  return `${value.toFixed(1).replace('.', LANGUAGE === 'fr' ? ',' : '.')} ${units[index]}`;
 }
 
 function durationLabel(seconds) {
@@ -53,7 +64,7 @@ function categoryColor(category) {
 
 function destinationText(file) {
   if (file.category !== 'Rushs') return folderName(file.category);
-  return `${folderName('Rushs')} › ${file.cameraBrand || 'À identifier'} › ${file.cameraModel || 'À identifier'} › ${file.shootingDate || 'Date inconnue'}`;
+  return `${folderName('Rushs')} › ${file.cameraBrand || t('À identifier')} › ${file.cameraModel || t('À identifier')} › ${file.shootingDate || t('Date inconnue')}`;
 }
 
 function folderName(id) {
@@ -68,8 +79,8 @@ function formatSummary() {
   const files = includedFiles();
   const size = files.reduce((total, file) => total + file.size, 0);
   $('mediaSummary').textContent = state.files.length
-    ? `${files.length} média${files.length > 1 ? 's' : ''} retenu${files.length > 1 ? 's' : ''} · ${bytesLabel(size)} · ${state.files.length - files.length} ignoré${state.files.length - files.length > 1 ? 's' : ''}`
-    : state.sourcePaths.length ? 'Aucun média détecté dans les dossiers sélectionnés' : 'Aucun dossier sélectionné';
+    ? `${t.plural(files.length, '{n} média retenu', '{n} médias retenus')} · ${bytesLabel(size)} · ${t.plural(state.files.length - files.length, '{n} ignoré', '{n} ignorés')}`
+    : state.sourcePaths.length ? t('Aucun média détecté dans les dossiers sélectionnés') : t('Aucun dossier sélectionné');
   $('toOptions').disabled = !state.files.length || !files.length || !state.scanId || state.scanning || state.duplicateCheckBusy || !state.connected || !state.folderPreferencesLoaded;
 }
 
@@ -104,11 +115,11 @@ function renderBins() {
 }
 
 function cameraFolderName(value) {
-  return String(value || '').replace(/[\\/:\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || 'À identifier';
+  return String(value || '').replace(/[\\/:\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || t('À identifier');
 }
 
 function renderStructurePreview() {
-  const tree = [$('projectName').value.trim() || 'Nouveau projet'];
+  const tree = [$('projectName').value.trim() || t('Nouveau projet')];
   const files = includedFiles();
   const sortNames = (values) => [...values].sort((a, b) => a.localeCompare(b, 'fr', { numeric: true, sensitivity: 'base' }));
   const addNode = (label, ancestors, last) => {
@@ -118,13 +129,13 @@ function renderStructurePreview() {
   state.folders.forEach((folder, rootIndex) => {
     const lastRoot = rootIndex === state.folders.length - 1;
     const matching = files.filter((file) => file.category === folder.id);
-    addNode(`${folder.name} (${matching.length || 'vide'})`, [], lastRoot);
+    addNode(`${folder.name} (${matching.length || t('vide')})`, [], lastRoot);
     if (folder.id !== 'Rushs' || !matching.length) return;
     const brands = new Map();
     for (const file of matching) {
       const brand = cameraFolderName(file.cameraBrand);
       const model = cameraFolderName(file.cameraModel);
-      const date = cameraFolderName(file.shootingDate || 'Date inconnue');
+      const date = cameraFolderName(file.shootingDate || t('Date inconnue'));
       if (!brands.has(brand)) brands.set(brand, new Map());
       const models = brands.get(brand);
       if (!models.has(model)) models.set(model, new Map());
@@ -222,8 +233,8 @@ function renderCameraSuggestions() {
   state.cameraSuggestions = getCameraNameSuggestions();
   $('cameraMerge').hidden = !state.cameraSuggestions.length;
   $('cameraMergeList').innerHTML = state.cameraSuggestions.map((item, index) => {
-    const type = item.property === 'cameraBrand' ? 'Marque' : `Modèle · ${item.brand || item.context}`;
-    return `<div class="camera-merge-row"><div class="camera-merge-copy"><span>${escapeHTML(type)}</span><strong>${escapeHTML(item.from)}</strong><span aria-hidden="true">→</span><strong>${escapeHTML(item.to)}</strong><small>${item.count} média${item.count === 1 ? '' : 's'} concernés</small></div><button class="button secondary compact" type="button" data-camera-merge="${index}" aria-label="Regrouper ${escapeHTML(item.from)} sous ${escapeHTML(item.to)}">Regrouper</button></div>`;
+    const type = item.property === 'cameraBrand' ? t('Marque') : t('Modèle · {name}', { name: item.brand || item.context });
+    return `<div class="camera-merge-row"><div class="camera-merge-copy"><span>${escapeHTML(type)}</span><strong>${escapeHTML(item.from)}</strong><span aria-hidden="true">→</span><strong>${escapeHTML(item.to)}</strong><small>${t.plural(item.count, '{n} média concerné', '{n} médias concernés')}</small></div><button class="button secondary compact" type="button" data-camera-merge="${index}" aria-label="${escapeHTML(t('Regrouper {from} sous {to}', { from: item.from, to: item.to }))}">${t('Regrouper')}</button></div>`;
   }).join('');
 }
 
@@ -235,7 +246,7 @@ function applyCameraMerge(suggestion) {
   }
   renderTable();
   renderProjectPreview();
-  showToast(`${suggestion.from} regroupé sous ${suggestion.to}.`);
+  showToast(t('{from} regroupé sous {to}.', { from: suggestion.from, to: suggestion.to }));
 }
 
 function renderProjectPreview() {
@@ -257,11 +268,11 @@ async function loadBinPreferences() {
     const result = await window.projectTool.loadBinPreferences();
     state.folders = result.folders.map((folder) => ({ ...folder, core: DEFAULT_FOLDERS.some((item) => item.id === folder.id) }));
     state.preferredFoldersCustomized = result.customized;
-    state.binPreferenceStatus = result.customized ? 'Structure préférée chargée. Enregistre les changements pour les garder.' : '';
+    state.binPreferenceStatus = result.customized ? t('Structure préférée chargée. Enregistre les changements pour les garder.') : '';
   } catch (error) {
     state.folders = DEFAULT_FOLDERS.map((folder) => ({ ...folder }));
     state.binPreferenceStatus = '';
-    showToast(error.message || 'La structure préférée est indisponible; le modèle de base est chargé.');
+    showToast(error.message || t('La structure préférée est indisponible; le modèle de base est chargé.'));
   } finally {
     state.folderPreferencesLoaded = true;
     renderBins();
@@ -279,10 +290,10 @@ async function savePreferredBins() {
     const result = await window.projectTool.saveBinPreferences(state.folders.map(({ id, name }) => ({ id, name })));
     state.folders = result.folders.map((folder) => ({ ...folder, core: DEFAULT_FOLDERS.some((item) => item.id === folder.id) }));
     state.preferredFoldersCustomized = true;
-    state.binPreferenceStatus = 'Structure préférée enregistrée pour les prochains projets.';
-    showToast('Structure préférée enregistrée pour les prochains projets.');
+    state.binPreferenceStatus = t('Structure préférée enregistrée pour les prochains projets.');
+    showToast(t('Structure préférée enregistrée pour les prochains projets.'));
   } catch (error) {
-    showToast(error.message || 'Impossible d’enregistrer la structure préférée.');
+    showToast(error.message || t('Impossible d’enregistrer la structure préférée.'));
   } finally {
     state.folderPreferenceBusy = false;
     renderBins();
@@ -296,7 +307,7 @@ async function resetPreferredBins() {
   if (state.folderPreferenceBusy) return;
   const baseIds = new Set(DEFAULT_FOLDERS.map((folder) => folder.id));
   if (state.files.some((file) => !baseIds.has(file.category))) {
-    showToast('Reclasse les médias des chutiers ajoutés avant de revenir au modèle de base.');
+    showToast(t('Reclasse les médias des chutiers ajoutés avant de revenir au modèle de base.'));
     return;
   }
   state.folderPreferenceBusy = true;
@@ -306,9 +317,9 @@ async function resetPreferredBins() {
     state.folders = result.folders.map((folder) => ({ ...folder, core: true }));
     state.preferredFoldersCustomized = false;
     state.binPreferenceStatus = '';
-    showToast('Modèle de base rétabli pour ce projet et les suivants.');
+    showToast(t('Modèle de base rétabli pour ce projet et les suivants.'));
   } catch (error) {
-    showToast(error.message || 'Impossible de réinitialiser la structure préférée.');
+    showToast(error.message || t('Impossible de réinitialiser la structure préférée.'));
   } finally {
     state.folderPreferenceBusy = false;
     renderBins();
@@ -321,7 +332,7 @@ async function resetPreferredBins() {
 function renderBinEditor() {
   $('binEditorList').innerHTML = state.folders.map((folder) => {
     const used = state.files.filter((file) => file.category === folder.id).length;
-    return `<div class="bin-edit-row"><input data-bin-name="${escapeHTML(folder.id)}" value="${escapeHTML(folder.name)}" maxlength="80" aria-label="Nom du chutier" ${state.folderPreferenceBusy ? 'disabled' : ''}><span>${used} média${used === 1 ? '' : 's'}</span><button type="button" data-remove-bin="${escapeHTML(folder.id)}" aria-label="Retirer le chutier ${escapeHTML(folder.name)}" title="${used ? 'Reclasse d’abord ses médias' : 'Retirer ce chutier'}" ${used || state.folderPreferenceBusy ? 'disabled' : ''}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button></div>`;
+    return `<div class="bin-edit-row"><input data-bin-name="${escapeHTML(folder.id)}" value="${escapeHTML(folder.name)}" maxlength="80" aria-label="${escapeHTML(t('Nom du chutier'))}" ${state.folderPreferenceBusy ? 'disabled' : ''}><span>${t.plural(used, '{n} média', '{n} médias')}</span><button type="button" data-remove-bin="${escapeHTML(folder.id)}" aria-label="${escapeHTML(t('Retirer le chutier {name}', { name: folder.name }))}" title="${escapeHTML(used ? t('Reclasse d’abord ses médias') : t('Retirer ce chutier'))}" ${used || state.folderPreferenceBusy ? 'disabled' : ''}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button></div>`;
   }).join('');
   $('addBin').disabled = state.scanning || state.duplicateCheckBusy || state.folderPreferenceBusy || state.folders.length >= 60;
   $('saveBinPreferences').disabled = state.folderPreferenceBusy || state.scanning || state.duplicateCheckBusy;
@@ -334,7 +345,7 @@ function renderBinEditor() {
     const name = input.value.replace(/[\\/:\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim();
     const duplicate = state.folders.some((item) => item.id !== folder.id && item.name.toLocaleLowerCase('fr') === name.toLocaleLowerCase('fr'));
     if (!name || name.length > 80 || duplicate) {
-      showToast(!name ? 'Le nom du chutier ne peut pas être vide.' : duplicate ? 'Un chutier porte déjà ce nom.' : 'Le nom du chutier est limité à 80 caractères.');
+      showToast(!name ? t('Le nom du chutier ne peut pas être vide.') : duplicate ? t('Un chutier porte déjà ce nom.') : t('Le nom du chutier est limité à 80 caractères.'));
       renderBinEditor();
       return;
     }
@@ -357,10 +368,11 @@ function renderBinEditor() {
 }
 
 function addCustomBin() {
-  if (state.folders.length >= 60) return showToast('Un projet ne peut pas contenir plus de 60 chutiers.');
-  let name = 'Nouveau chutier';
+  if (state.folders.length >= 60) return showToast(t('Un projet ne peut pas contenir plus de 60 chutiers.'));
+  const baseName = t('Nouveau chutier');
+  let name = baseName;
   let suffix = 2;
-  while (state.folders.some((folder) => folder.name.toLocaleLowerCase('fr') === name.toLocaleLowerCase('fr'))) name = `Nouveau chutier ${suffix++}`;
+  while (state.folders.some((folder) => folder.name.toLocaleLowerCase('fr') === name.toLocaleLowerCase('fr'))) name = `${baseName} ${suffix++}`;
   const folder = { id: `custom-${crypto.randomUUID()}`, name, core: false };
   state.folders.push(folder);
   renderBins();
@@ -374,17 +386,17 @@ function addCustomBin() {
 
 function renderSources() {
   $('chooseSources').disabled = state.scanning || state.duplicateCheckBusy;
-  $('chooseSources').querySelector('span').textContent = state.scanning && !state.refreshing ? 'Analyse…' : state.sourcePaths.length && !state.files.length ? 'Analyser' : 'Ajouter';
+  $('chooseSources').querySelector('span').textContent = state.scanning && !state.refreshing ? t('Analyse…') : state.sourcePaths.length && !state.files.length ? t('Analyser') : t('Ajouter');
   $('refreshSources').disabled = !state.scanId || state.scanning || state.duplicateCheckBusy;
-  $('refreshSources').querySelector('span').textContent = state.refreshing ? 'Lecture…' : 'Actualiser';
+  $('refreshSources').querySelector('span').textContent = state.refreshing ? t('Lecture…') : t('Actualiser');
   if (!state.sourcePaths.length) {
-    $('sourceList').innerHTML = '<div class="source-empty">Ajoute les dossiers qui contiennent tes rushs, musiques et éléments.</div>';
+    $('sourceList').innerHTML = `<div class="source-empty">${escapeHTML(t('Ajoute les dossiers qui contiennent tes rushs, musiques et éléments.'))}</div>`;
     return;
   }
   $('sourceList').innerHTML = state.sourcePaths.map((source) => {
     const count = state.files.filter((file) => file.sourceFolder === source).length;
     const bytes = state.files.filter((file) => file.sourceFolder === source).reduce((sum, file) => sum + file.size, 0);
-    return `<div class="source-card"><span class="folder-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5h7l2 2H21v9H3z"/><path d="M3 7.5V6h7l2 2"/></svg></span><div class="source-info"><div class="source-name" title="${escapeHTML(source)}">${escapeHTML(source)}</div><div class="source-meta">${count} média${count > 1 ? 's' : ''}${count ? ` · ${bytesLabel(bytes)}` : ''}</div></div><button class="source-remove" data-remove-source="${escapeHTML(source)}" aria-label="Retirer ce dossier" ${state.scanning || state.duplicateCheckBusy ? 'disabled' : ''}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button></div>`;
+    return `<div class="source-card"><span class="folder-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5h7l2 2H21v9H3z"/><path d="M3 7.5V6h7l2 2"/></svg></span><div class="source-info"><div class="source-name" title="${escapeHTML(source)}">${escapeHTML(source)}</div><div class="source-meta">${t.plural(count, '{n} média', '{n} médias')}${count ? ` · ${bytesLabel(bytes)}` : ''}</div></div><button class="source-remove" data-remove-source="${escapeHTML(source)}" aria-label="${escapeHTML(t('Retirer ce dossier'))}" ${state.scanning || state.duplicateCheckBusy ? 'disabled' : ''}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button></div>`;
   }).join('');
   document.querySelectorAll('[data-remove-source]').forEach((button) => {
     button.addEventListener('click', () => {
@@ -406,21 +418,21 @@ function renderSources() {
 
 // Profils couleur (à garder synchronisé avec plugin/lib/cst.js).
 const COLOR_PROFILES = [
-  ['', 'Non reconnu · aucun CST'],
+  ['', t('Non reconnu · aucun CST')],
   ['sony-slog3', 'S-Log3 · S-Gamut3.Cine'],
   ['canon-clog2', 'Canon Log 2'],
   ['canon-clog3', 'Canon Log 3'],
-  ['panasonic-vlog', 'V-Log · gestion couleur seulement'],
-  ['fujifilm-flog', 'F-Log · gestion couleur seulement'],
-  ['fujifilm-flog2', 'F-Log2 · gestion couleur seulement'],
-  ['nikon-nlog', 'N-Log · gestion couleur seulement'],
-  ['dji-dlog', 'D-Log · gestion couleur seulement'],
-  ['apple-log', 'Apple Log · gestion couleur seulement'],
-  ['arri-logc3', 'ARRI LogC3 · gestion couleur seulement'],
-  ['arri-logc4', 'ARRI LogC4 · gestion couleur seulement'],
-  ['red-log3g10', 'RED Log3G10 · gestion couleur seulement'],
-  ['bmd-filmgen5', 'Blackmagic Film Gen 5 · gestion couleur seulement'],
-  ['none', 'Aucun CST · déjà en Rec.709']
+  ['panasonic-vlog', `V-Log · ${t('gestion couleur seulement')}`],
+  ['fujifilm-flog', `F-Log · ${t('gestion couleur seulement')}`],
+  ['fujifilm-flog2', `F-Log2 · ${t('gestion couleur seulement')}`],
+  ['nikon-nlog', `N-Log · ${t('gestion couleur seulement')}`],
+  ['dji-dlog', `D-Log · ${t('gestion couleur seulement')}`],
+  ['apple-log', `Apple Log · ${t('gestion couleur seulement')}`],
+  ['arri-logc3', `ARRI LogC3 · ${t('gestion couleur seulement')}`],
+  ['arri-logc4', `ARRI LogC4 · ${t('gestion couleur seulement')}`],
+  ['red-log3g10', `RED Log3G10 · ${t('gestion couleur seulement')}`],
+  ['bmd-filmgen5', `Blackmagic Film Gen 5 · ${t('gestion couleur seulement')}`],
+  ['none', t('Aucun CST · déjà en Rec.709')]
 ];
 const CAMERA_PROFILES = [
   [/\bFX3\b|\bFX30\b|\bFX6V?\b|\bFX9\b|\bBURANO\b|\bMPC-2610\b|\bILCE-(?:7SM3|7M4|1|7RM5)\b|\bA7S ?III\b|\bA7 ?IV\b|\bZV-E1\b|\bFR7\b/i, 'sony-slog3'],
@@ -436,11 +448,11 @@ function autoColorProfile(file) {
 
 function reviewReasons(file) {
   const reasons = [];
-  if (file.size === 0) reasons.push({ id: 'empty', label: 'Fichier vide' });
-  if (file.size > 0 && !file.verified) reasons.push({ id: 'analysis', label: 'Analyse technique indisponible' });
-  if (file.category === 'Rushs' && (!file.cameraBrand || !file.cameraModel || file.cameraBrand === 'À identifier' || file.cameraModel === 'À identifier')) reasons.push({ id: 'camera', label: 'Caméra à identifier' });
-  if (file.category === 'Rushs' && file.dateSource === 'creation') reasons.push({ id: 'date', label: 'Date de création utilisée' });
-  if (file.duplicateOf) reasons.push({ id: 'duplicate', label: file.duplicateVerification === 'identical' ? 'Contenu identique' : file.duplicateVerification === 'unreadable' ? 'Doublon probable · comparaison impossible' : 'Doublon probable' });
+  if (file.size === 0) reasons.push({ id: 'empty', label: t('Fichier vide') });
+  if (file.size > 0 && !file.verified) reasons.push({ id: 'analysis', label: t('Analyse technique indisponible') });
+  if (file.category === 'Rushs' && (!file.cameraBrand || !file.cameraModel || file.cameraBrand === 'À identifier' || file.cameraModel === 'À identifier')) reasons.push({ id: 'camera', label: t('Caméra à identifier') });
+  if (file.category === 'Rushs' && file.dateSource === 'creation') reasons.push({ id: 'date', label: t('Date de création utilisée') });
+  if (file.duplicateOf) reasons.push({ id: 'duplicate', label: file.duplicateVerification === 'identical' ? t('Contenu identique') : file.duplicateVerification === 'unreadable' ? t('Doublon probable · comparaison impossible') : t('Doublon probable') });
   return reasons;
 }
 
@@ -451,7 +463,7 @@ function renderTable() {
   $('reviewCount').hidden = !hasFiles;
   if (!hasFiles) {
     $('mediaRows').innerHTML = '';
-    $('reviewLabel').textContent = '0 élément à vérifier';
+    $('reviewLabel').textContent = t.plural(0, '{n} élément à vérifier', '{n} éléments à vérifier');
     $('reviewFilters').hidden = true;
     $('reviewExplanation').hidden = true;
     updateDuplicateTools();
@@ -470,32 +482,32 @@ function renderTable() {
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   if (state.page >= pageCount) state.page = pageCount - 1;
   const reviewCount = state.files.filter((file) => reviewReasons(file).length).length;
-  $('reviewLabel').textContent = `${reviewCount} élément${reviewCount > 1 ? 's' : ''} à vérifier`;
+  $('reviewLabel').textContent = t.plural(reviewCount, '{n} élément à vérifier', '{n} éléments à vérifier');
   $('reviewExplanation').hidden = !reviewCount;
   updateDuplicateTools();
   renderReviewFilters();
 
   if (!visible.length) {
-    $('mediaRows').innerHTML = '<tr><td class="empty-filter" colspan="7">Aucun média ne correspond à cette recherche.</td></tr>';
+    $('mediaRows').innerHTML = '<tr><td class="empty-filter" colspan="7">' + escapeHTML(t('Aucun média ne correspond à cette recherche.')) + '</td></tr>';
   } else {
     $('mediaRows').innerHTML = visible.map((file) => {
       const badges = reviewReasons(file).map((reason) => `<span class="review-mark ${reason.id}-mark">${escapeHTML(reason.label)}</span>`).join('');
       const destination = file.category === 'Rushs'
-        ? `<div class="destination-edit"><input data-edit="cameraBrand" data-file="${file.id}" value="${escapeHTML(file.cameraBrand)}" placeholder="Marque" aria-label="Marque de caméra pour ${escapeHTML(file.name)}"><input data-edit="cameraModel" data-file="${file.id}" value="${escapeHTML(file.cameraModel)}" placeholder="Modèle" aria-label="Modèle de caméra pour ${escapeHTML(file.name)}"><input type="date" data-edit="shootingDate" data-file="${file.id}" value="${escapeHTML(file.shootingDate)}" aria-label="Date de tournage pour ${escapeHTML(file.name)}"></div>`
+        ? `<div class="destination-edit"><input data-edit="cameraBrand" data-file="${file.id}" value="${escapeHTML(file.cameraBrand)}" placeholder="${escapeHTML(t('Marque'))}" aria-label="${escapeHTML(t('Marque de caméra pour {name}', { name: file.name }))}"><input data-edit="cameraModel" data-file="${file.id}" value="${escapeHTML(file.cameraModel)}" placeholder="${escapeHTML(t('Modèle'))}" aria-label="${escapeHTML(t('Modèle de caméra pour {name}', { name: file.name }))}"><input type="date" data-edit="shootingDate" data-file="${file.id}" value="${escapeHTML(file.shootingDate)}" aria-label="${escapeHTML(t('Date de tournage pour {name}', { name: file.name }))}"></div>`
         : isSyncAudioFile(file)
-          ? `<div class="destination-edit"><span class="destination-path" title="${escapeHTML(folderName(file.category))}">${escapeHTML(folderName(file.category))}</span><input type="date" data-edit="shootingDate" data-file="${file.id}" value="${escapeHTML(/^\d{4}-\d{2}-\d{2}$/.test(file.shootingDate || '') ? file.shootingDate : '')}" title="Date du son direct, utilisée pour la synchro jour par jour" aria-label="Date du son pour ${escapeHTML(file.name)}"></div>`
+          ? `<div class="destination-edit"><span class="destination-path" title="${escapeHTML(folderName(file.category))}">${escapeHTML(folderName(file.category))}</span><input type="date" data-edit="shootingDate" data-file="${file.id}" value="${escapeHTML(/^\d{4}-\d{2}-\d{2}$/.test(file.shootingDate || '') ? file.shootingDate : '')}" title="${escapeHTML(t('Date du son direct, utilisée pour la synchro jour par jour'))}" aria-label="${escapeHTML(t('Date du son pour {name}', { name: file.name }))}"></div>`
           : `<span class="destination-path" title="${escapeHTML(folderName(file.category))}">${escapeHTML(folderName(file.category))}</span>`;
       const profileCell = file.category === 'Rushs'
-        ? `<select class="type-select profile-select${file.colorProfile ? '' : ' profile-unknown'}" data-profile="${file.id}" aria-label="Profil couleur de ${escapeHTML(file.name)}" title="${file.colorProfileManual ? 'Choisi à la main' : 'Détecté automatiquement'}">${COLOR_PROFILES.map(([value, label]) => `<option value="${value}"${(file.colorProfile || '') === value ? ' selected' : ''}>${escapeHTML(label)}</option>`).join('')}</select>`
+        ? `<select class="type-select profile-select${file.colorProfile ? '' : ' profile-unknown'}" data-profile="${file.id}" aria-label="${escapeHTML(t('Profil couleur de {name}', { name: file.name }))}" title="${escapeHTML(file.colorProfileManual ? t('Choisi à la main') : t('Détecté automatiquement'))}">${COLOR_PROFILES.map(([value, label]) => `<option value="${value}"${(file.colorProfile || '') === value ? ' selected' : ''}>${escapeHTML(label)}</option>`).join('')}</select>`
         : '<span class="profile-none">—</span>';
-      return `<tr data-row="${file.id}" class="${file.duplicateOf ? 'duplicate-row' : ''}"><td><div class="file-cell"><span class="file-symbol">${categoryColor(file.category)}</span><div class="file-copy"><div class="file-name" title="${escapeHTML(file.name)}">${escapeHTML(file.name)}</div><div class="file-path" title="${escapeHTML(file.filePath)}">${escapeHTML(file.filePath)}</div><div class="review-marks">${badges}</div></div></div></td><td><select class="type-select" data-category="${file.id}" aria-label="Type de ${escapeHTML(file.name)}">${state.folders.map((folder) => `<option value="${escapeHTML(folder.id)}"${file.category === folder.id ? ' selected' : ''}>${escapeHTML(folder.name)}</option>`).join('')}</select></td><td><div class="destination-cell"><span class="folder-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 5.5h6l1.4 1.6H18v8.9H2z"/><path d="M2 5.5V4h6l1.4 1.6"/></svg></span>${destination}</div></td><td>${profileCell}</td><td class="size-cell">${bytesLabel(file.size)}</td><td class="duration-cell">${durationLabel(file.duration)}${file.timecode ? `<div class="timecode-label" title="Timecode de début">TC ${escapeHTML(file.timecode)}</div>` : ''}</td><td><input class="row-toggle" type="checkbox" data-include="${file.id}" ${file.include ? 'checked' : ''} aria-label="Inclure ${escapeHTML(file.name)}"></td></tr>`;
+      return `<tr data-row="${file.id}" class="${file.duplicateOf ? 'duplicate-row' : ''}"><td><div class="file-cell"><span class="file-symbol">${categoryColor(file.category)}</span><div class="file-copy"><div class="file-name" title="${escapeHTML(file.name)}">${escapeHTML(file.name)}</div><div class="file-path" title="${escapeHTML(file.filePath)}">${escapeHTML(file.filePath)}</div><div class="review-marks">${badges}</div></div></div></td><td><select class="type-select" data-category="${file.id}" aria-label="${escapeHTML(t('Type de {name}', { name: file.name }))}">${state.folders.map((folder) => `<option value="${escapeHTML(folder.id)}"${file.category === folder.id ? ' selected' : ''}>${escapeHTML(folder.name)}</option>`).join('')}</select></td><td><div class="destination-cell"><span class="folder-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 5.5h6l1.4 1.6H18v8.9H2z"/><path d="M2 5.5V4h6l1.4 1.6"/></svg></span>${destination}</div></td><td>${profileCell}</td><td class="size-cell">${bytesLabel(file.size)}</td><td class="duration-cell">${durationLabel(file.duration)}${file.timecode ? `<div class="timecode-label" title="${escapeHTML(t('Timecode de début'))}">TC ${escapeHTML(file.timecode)}</div>` : ''}</td><td><input class="row-toggle" type="checkbox" data-include="${file.id}" ${file.include ? 'checked' : ''} aria-label="${escapeHTML(t('Inclure {name}', { name: file.name }))}"></td></tr>`;
     }).join('');
   }
 
   updateReviewCount();
   if (pageCount > 1) {
     const row = document.createElement('tr');
-    row.innerHTML = `<td colspan="7" class="page-row"><button class="button secondary compact" id="previousPage" ${state.page === 0 ? 'disabled' : ''}>Précédent</button><span>Page ${state.page + 1} sur ${pageCount} · ${filtered.length} médias affichés</span><button class="button secondary compact" id="nextPage" ${state.page + 1 === pageCount ? 'disabled' : ''}>Suivante</button></td>`;
+    row.innerHTML = `<td colspan="7" class="page-row"><button class="button secondary compact" id="previousPage" ${state.page === 0 ? 'disabled' : ''}>${t('Précédent')}</button><span>${escapeHTML(t('Page {page} sur {pages} · {n} médias affichés', { page: state.page + 1, pages: pageCount, n: filtered.length }))}</span><button class="button secondary compact" id="nextPage" ${state.page + 1 === pageCount ? 'disabled' : ''}>${t('Suivante')}</button></td>`;
     $('mediaRows').append(row);
     $('previousPage').addEventListener('click', () => { state.page -= 1; renderTable(); });
     $('nextPage').addEventListener('click', () => { state.page += 1; renderTable(); });
@@ -556,16 +568,16 @@ function updateDuplicateTools() {
   $('verifyDuplicates').hidden = !count;
   $('duplicateCheckHint').hidden = !count;
   $('verifyDuplicates').disabled = state.duplicateCheckBusy || !count;
-  $('verifyDuplicates').textContent = state.duplicateCheckBusy ? 'Comparaison en cours…' : 'Comparer le contenu des doublons probables';
+  $('verifyDuplicates').textContent = state.duplicateCheckBusy ? t('Comparaison en cours…') : t('Comparer le contenu des doublons probables');
   $('cancelDuplicateCheck').hidden = !state.duplicateCheckBusy;
   $('cancelDuplicateCheck').disabled = false;
-  $('cancelDuplicateCheck').textContent = 'Arrêter';
+  $('cancelDuplicateCheck').textContent = t('Arrêter');
   formatSummary();
 }
 
 function updateReviewCount() {
   const count = state.files.filter((file) => reviewReasons(file).length).length;
-  $('reviewLabel').textContent = `${count} élément${count > 1 ? 's' : ''} à vérifier`;
+  $('reviewLabel').textContent = t.plural(count, '{n} élément à vérifier', '{n} éléments à vérifier');
 }
 
 function renderReviewFilters() {
@@ -573,7 +585,7 @@ function renderReviewFilters() {
   for (const file of state.files) {
     for (const reason of reviewReasons(file)) counts.set(reason.id, (counts.get(reason.id) || 0) + 1);
   }
-  const labels = { empty: 'Fichiers vides', analysis: 'Analyse à confirmer', camera: 'Caméra à identifier', date: 'Date de repli', duplicate: 'Doublons probables' };
+  const labels = { empty: t('Fichiers vides'), analysis: t('Analyse à confirmer'), camera: t('Caméra à identifier'), date: t('Date de repli'), duplicate: t('Doublons probables') };
   const filters = [...counts].map(([id, count]) => `<button class="review-filter${state.reviewFilter === id ? ' active' : ''}" data-review-filter="${id}" aria-pressed="${state.reviewFilter === id}">${labels[id]} <span>${count}</span></button>`).join('');
   $('reviewFilters').innerHTML = filters;
   $('reviewFilters').hidden = !filters;
@@ -604,7 +616,7 @@ async function scanSelectedSources(pathsToScan = state.sourcePaths, previousStat
   $('chooseSources').disabled = true;
   renderSources();
   $('progressBar').style.width = '0%';
-  $('progressText').textContent = 'Préparation de l’analyse…';
+  $('progressText').textContent = t('Préparation de l’analyse…');
   try {
     const result = await window.projectTool.scanSources(
       state.scanOperationId,
@@ -619,7 +631,7 @@ async function scanSelectedSources(pathsToScan = state.sourcePaths, previousStat
       else { state.scanId = ''; state.files = []; }
       renderSources();
       renderTable();
-      showToast(previousState ? forceRefresh ? 'Actualisation interrompue. Les résultats précédents sont conservés.' : 'Mise à jour interrompue. Les résultats précédents sont conservés.' : 'Analyse interrompue. Tu peux la relancer ou retirer un dossier.');
+      showToast(previousState ? forceRefresh ? t('Actualisation interrompue. Les résultats précédents sont conservés.') : t('Mise à jour interrompue. Les résultats précédents sont conservés.') : t('Analyse interrompue. Tu peux la relancer ou retirer un dossier.'));
       return;
     }
     state.scanId = result.scanId;
@@ -653,9 +665,9 @@ async function scanSelectedSources(pathsToScan = state.sourcePaths, previousStat
     state.page = 0;
     renderSources();
     renderTable();
-    if (previousState) showToast(`${forceRefresh ? 'Médias actualisés' : 'Dossiers mis à jour'}. L’analyse des doublons a été réinitialisée.`);
+    if (previousState) showToast(t('{what}. L’analyse des doublons a été réinitialisée.', { what: forceRefresh ? t('Médias actualisés') : t('Dossiers mis à jour') }));
   } catch (error) {
-    showToast(error.message || 'Analyse des dossiers impossible.');
+    showToast(error.message || t('Analyse des dossiers impossible.'));
     if (previousState) Object.assign(state, previousState);
     else { state.files = []; state.scanId = ''; }
     renderTable();
@@ -666,7 +678,7 @@ async function scanSelectedSources(pathsToScan = state.sourcePaths, previousStat
     $('scanProgress').hidden = true;
     $('chooseSources').disabled = false;
     $('cancelScan').disabled = false;
-    $('cancelScan').textContent = 'Arrêter';
+    $('cancelScan').textContent = t('Arrêter');
     renderSources();
     formatSummary();
   }
@@ -691,7 +703,7 @@ async function chooseSources() {
     renderTable();
     await scanSelectedSources(added, previousState.scanId ? previousState : null);
   } catch (error) {
-    showToast(error.message || 'Impossible de choisir les dossiers.');
+    showToast(error.message || t('Impossible de choisir les dossiers.'));
   }
 }
 
@@ -710,19 +722,19 @@ function prepareOptionsView() {
   const rushes = files.filter((file) => file.category === 'Rushs');
   const reviews = files.filter((file) => reviewReasons(file).length).length;
   const summary = [
-    ['project', $('projectName').value.trim(), 'Projet Resolve'],
-    ['media', `${files.length}`, 'Médias retenus'],
-    ['size', bytesLabel(size), 'Taille totale'],
-    ['formats', `${new Set(files.map((file) => file.extension)).size}`, 'Formats détectés'],
-    ['cameras', `${new Set(rushes.filter((file) => file.cameraBrand && file.cameraModel && file.cameraBrand !== 'À identifier' && file.cameraModel !== 'À identifier').map((file) => `${file.cameraBrand}|${file.cameraModel}`)).size}`, 'Caméras identifiées'],
-    ['review', `${reviews}`, 'À vérifier']
+    ['project', $('projectName').value.trim(), t('Projet Resolve')],
+    ['media', `${files.length}`, t('Médias retenus')],
+    ['size', bytesLabel(size), t('Taille totale')],
+    ['formats', `${new Set(files.map((file) => file.extension)).size}`, t('Formats détectés')],
+    ['cameras', `${new Set(rushes.filter((file) => file.cameraBrand && file.cameraModel && file.cameraBrand !== 'À identifier' && file.cameraModel !== 'À identifier').map((file) => `${file.cameraBrand}|${file.cameraModel}`)).size}`, t('Caméras identifiées')],
+    ['review', `${reviews}`, t('À vérifier')]
   ];
   $('creationSummary').innerHTML = summary.map(([, value, label]) => `<div class="summary-item"><div class="summary-value">${escapeHTML(value)}</div><div class="summary-label">${escapeHTML(label)}</div></div>`).join('');
-  $('finalMediaSummary').textContent = `${rushes.length} rush${rushes.length > 1 ? 's' : ''} · ${files.length - rushes.length} autre${files.length - rushes.length === 1 ? '' : 's'} média${files.length - rushes.length === 1 ? '' : 's'}`;
+  $('finalMediaSummary').textContent = `${t.plural(rushes.length, '{n} rush', '{n} rushs')} · ${t.plural(files.length - rushes.length, '{n} autre média', '{n} autres médias')}`;
   $('openProjectNote').hidden = !state.currentProject;
   $('openProjectText').textContent = state.currentProject
-    ? `Le projet ouvert « ${state.currentProject} » sera enregistré avant la création.`
-    : 'Aucun autre projet ouvert dans Resolve.';
+    ? t('Le projet ouvert « {name} » sera enregistré avant la création.', { name: state.currentProject })
+    : t('Aucun autre projet ouvert dans Resolve.');
   syncCreateButton();
 }
 
@@ -740,7 +752,7 @@ function updateCreateProgress(progress) {
   const stageBase = progress.stage === 'project' ? 0 : progress.stage === 'bins' ? .08 : progress.stage === 'import' ? .25 : progress.stage === 'sync' ? .82 : progress.stage === 'grade' ? .9 : 1;
   const stageWeight = progress.stage === 'project' ? .08 : progress.stage === 'bins' ? .17 : progress.stage === 'import' ? .57 : progress.stage === 'sync' ? .08 : progress.stage === 'grade' ? .09 : 0;
   bar.style.width = `${Math.min(99, Math.round((stageBase + stageWeight * fraction) * 100))}%`;
-  text.textContent = progress.label || 'Préparation dans Resolve…';
+  text.textContent = progress.label || t('Préparation dans Resolve…');
 }
 
 function renderCompletion(result) {
@@ -748,32 +760,32 @@ function renderCompletion(result) {
   setStep(4);
   const hasWarning = Boolean(result.warning || result.failedNames?.length);
   $('completionMark').classList.toggle('warning-mark', hasWarning);
-  $('completionTitle').textContent = hasWarning ? 'Projet créé avec des points à vérifier' : 'Projet prêt';
-  $('completionSubtitle').textContent = `« ${result.projectName} » est ouvert dans DaVinci Resolve.`;
+  $('completionTitle').textContent = hasWarning ? t('Projet créé avec des points à vérifier') : t('Projet prêt');
+  $('completionSubtitle').textContent = t('« {name} » est ouvert dans DaVinci Resolve.', { name: result.projectName });
   const rows = [
-    ['Médias importés', `${result.importedCount}`],
-    ['Doublons ignorés', `${result.excludedCount}`],
-    ['Chutiers créés', result.createdBins.join(' · ')],
-    ['Timeline', result.timelineName ? `${result.timelineName} · ${result.timelineFormat}` : 'Aucune timeline créée']
+    [t('Médias importés'), `${result.importedCount}`],
+    [t('Doublons ignorés'), `${result.excludedCount}`],
+    [t('Chutiers créés'), result.createdBins.join(' · ')],
+    [t('Timeline'), result.timelineName ? `${result.timelineName} · ${result.timelineFormat}` : t('Aucune timeline créée')]
   ];
   if (result.syncReport) {
     const { days, mode, audioCount, unmatchedAudio } = result.syncReport;
     const synced = days.filter((day) => day.ok).length;
-    rows.push(['Synchro du son', days.length
-      ? `${synced} / ${days.length} jour(s) · ${mode}${unmatchedAudio ? ` · ${unmatchedAudio} fichier(s) son sans image le même jour` : ''}`
-      : audioCount ? 'Aucun jour avec image et son' : 'Aucun son direct importé']);
+    rows.push([t('Synchro du son'), days.length
+      ? `${synced} / ${days.length} ${t('jour(s)')} · ${mode}${unmatchedAudio ? ` · ${t('{n} fichier(s) son sans image le même jour', { n: unmatchedAudio })}` : ''}`
+      : audioCount ? t('Aucun jour avec image et son') : t('Aucun son direct importé')]);
   }
-  if (result.proxyReport) rows.push(['Proxies existants liés', `${result.proxyReport.linked} / ${result.proxyReport.linked + result.proxyReport.failed.length} plan(s)`]);
-  if (result.extraTimelines?.length) rows.push(['Timelines supplémentaires', result.extraTimelines.map((n) => n.split(' — ').pop()).join(' · ')]);
+  if (result.proxyReport) rows.push([t('Proxies existants liés'), t('{linked} / {total} plan(s)', { linked: result.proxyReport.linked, total: result.proxyReport.linked + result.proxyReport.failed.length })]);
+  if (result.extraTimelines?.length) rows.push([t('Timelines supplémentaires'), result.extraTimelines.map((n) => n.split(' — ').pop()).join(' · ')]);
   if (result.colorReport) {
     const { applied, unrecognized, failed, output } = result.colorReport;
     const skipped = result.colorReport.skipped || 0;
     const total = applied + skipped + unrecognized.length + failed.length;
-    rows.push([result.colorReport.method === 'managed' ? 'Gestion couleur' : 'Color Space Transform', `${applied} / ${total} plan(s) · sortie ${output}${skipped ? ` · ${skipped} déjà en Rec.709` : ''}`]);
-    if (unrecognized.length) rows.push(['Caméra non reconnue', unrecognized.slice(0, 4).join(', ') + (unrecognized.length > 4 ? ` et ${unrecognized.length - 4} autre(s)` : '')]);
+    rows.push([result.colorReport.method === 'managed' ? t('Gestion couleur') : 'Color Space Transform', t('{applied} / {total} plan(s) · sortie {output}', { applied, total, output }) + (skipped ? ` · ${t('{n} déjà en Rec.709', { n: skipped })}` : '')]);
+    if (unrecognized.length) rows.push([t('Caméra non reconnue'), unrecognized.slice(0, 4).join(', ') + (unrecognized.length > 4 ? ` ${t('et {n} autre(s)', { n: unrecognized.length - 4 })}` : '')]);
   }
   $('completionReport').innerHTML = rows.map(([label, value]) => `<div class="report-row"><span>${escapeHTML(label)}</span><span>${escapeHTML(value)}</span></div>`).join('');
-  const warningParts = [result.warning, result.failedNames?.length ? `À vérifier : ${result.failedNames.slice(0, 6).join(', ')}${result.failedNames.length > 6 ? ` et ${result.failedNames.length - 6} autre(s)` : ''}.` : ''];
+  const warningParts = [result.warning, result.failedNames?.length ? t('À vérifier : {names}.', { names: `${result.failedNames.slice(0, 6).join(', ')}${result.failedNames.length > 6 ? ` ${t('et {n} autre(s)', { n: result.failedNames.length - 6 })}` : ''}` }) : ''];
   $('completionWarning').textContent = warningParts.filter(Boolean).join(' ');
   $('completionWarning').hidden = !hasWarning;
   const showProxyGuide = $('prepareProxies').checked;
@@ -783,15 +795,15 @@ function renderCompletion(result) {
 
 async function createProjectNow() {
   const name = $('projectName').value.trim();
-  if (!name) return showToast('Saisis un nom de projet.');
-  if (/[\\/:\u0000-\u001f]/.test(name)) return showToast('Le nom ne peut pas contenir de barre oblique.');
-  if (name.length > 100) return showToast('Le nom du projet doit contenir 100 caractères maximum.');
-  if (includedFiles().some((file) => !state.folders.some((folder) => folder.id === file.category))) return showToast('Un média est classé dans un chutier supprimé. Reclasse-le à l’étape Sources.');
+  if (!name) return showToast(t('Saisis un nom de projet.'));
+  if (/[\\/:\u0000-\u001f]/.test(name)) return showToast(t('Le nom ne peut pas contenir de barre oblique.'));
+  if (name.length > 100) return showToast(t('Le nom du projet doit contenir 100 caractères maximum.'));
+  if (includedFiles().some((file) => !state.folders.some((folder) => folder.id === file.category))) return showToast(t('Un média est classé dans un chutier supprimé. Reclasse-le à l’étape Sources.'));
   state.creating = true;
   $('createProgress').hidden = false;
   $('createProgressBar').style.width = '0%';
   $('createNow').disabled = true;
-  $('createNow').textContent = 'Création…';
+  $('createNow').textContent = t('Création…');
   try {
     const result = await window.projectTool.createProject({
       projectName: name,
@@ -816,11 +828,11 @@ async function createProjectNow() {
     });
     renderCompletion(result);
   } catch (error) {
-    showToast(error.message || 'Création du projet impossible.');
+    showToast(error.message || t('Création du projet impossible.'));
   } finally {
     state.creating = false;
     $('createProgress').hidden = true;
-    $('createNow').textContent = 'Créer le projet';
+    $('createNow').textContent = t('Créer le projet');
     $('createNow').disabled = false;
   }
 }
@@ -847,8 +859,8 @@ async function refreshStatus() {
     state.connected = result.connected;
     state.currentProject = result.currentProject || '';
     const label = result.connected
-      ? (state.currentProject ? `Projet ouvert : ${state.currentProject}` : 'Connecté à Resolve')
-      : `Connexion à Resolve indisponible · ${result.error || ''}`;
+      ? (state.currentProject ? t('Projet ouvert : {name}', { name: state.currentProject }) : t('Connecté à Resolve'))
+      : `${t('Connexion à Resolve indisponible')} · ${result.error || ''}`;
     $('connectionState').textContent = label;
     $('retryConnection').hidden = result.connected;
     if (result.connected) loadSettingsPresets();
@@ -856,7 +868,7 @@ async function refreshStatus() {
     formatSummary();
   } catch (_) {
     state.connected = false;
-    $('connectionState').textContent = 'Connexion à Resolve indisponible';
+    $('connectionState').textContent = t('Connexion à Resolve indisponible');
     $('retryConnection').hidden = false;
     $('toSources').disabled = true;
   }
@@ -867,7 +879,7 @@ async function refreshStatus() {
   try {
     const update = await window.projectTool.checkUpdate();
     if (!update) return;
-    $('updateText').textContent = `La version ${update.version} est disponible.`;
+    $('updateText').textContent = t('La version {version} est disponible.', { version: update.version });
     $('updateLink').hidden = !update.url;
     $('updateLink').onclick = () => window.projectTool.openRelease(update.url);
     $('updateBanner').hidden = false;
@@ -883,8 +895,8 @@ $('exportReport').addEventListener('click', async () => {
   if (!state.lastResult) return;
   try {
     const saved = await window.projectTool.exportReport(state.lastResult);
-    if (saved) showToast('Rapport enregistré.');
-  } catch (error) { showToast(error.message || 'Export du rapport impossible.'); }
+    if (saved) showToast(t('Rapport enregistré.'));
+  } catch (error) { showToast(error.message || t('Export du rapport impossible.')); }
 });
 $('finish').addEventListener('click', () => window.projectTool.finish());
 $('openProxyGenerator').addEventListener('click', async () => {
@@ -892,12 +904,17 @@ $('openProxyGenerator').addEventListener('click', async () => {
   button.disabled = true;
   try {
     const result = await window.projectTool.openProxyGenerator(state.sourcePaths);
-    showToast(result.added ? `${result.added} dossier(s) ajouté(s) à la surveillance.` : 'Tous les dossiers sont déjà surveillés.');
+    showToast(result.added ? t('{n} dossier(s) ajouté(s) à la surveillance.', { n: result.added }) : t('Tous les dossiers sont déjà surveillés.'));
   } catch (error) {
-    showToast(error.message || 'Impossible d’ouvrir Blackmagic Proxy Generator.');
+    showToast(error.message || t('Impossible d’ouvrir Blackmagic Proxy Generator.'));
   } finally {
     button.disabled = false;
   }
+});
+$('languageSelect').value = (() => { try { return localStorage.getItem('rpm.language') || 'auto'; } catch (_) { return 'auto'; } })();
+$('languageSelect').addEventListener('change', (event) => {
+  try { localStorage.setItem('rpm.language', event.target.value); } catch (_) {}
+  location.reload();
 });
 $('toSources').addEventListener('click', () => setStep(2));
 $('backToProject').addEventListener('click', () => setStep(1));
@@ -981,10 +998,10 @@ $('createNow').addEventListener('click', createProjectNow);
 $('cancelScan').addEventListener('click', async () => {
   if (!state.scanOperationId) return;
   $('cancelScan').disabled = true;
-  $('cancelScan').textContent = 'Arrêt…';
+  $('cancelScan').textContent = t('Arrêt…');
   try { await window.projectTool.cancelOperation(state.scanOperationId); } catch (_) {
     $('cancelScan').disabled = false;
-    $('cancelScan').textContent = 'Arrêter';
+    $('cancelScan').textContent = t('Arrêter');
   }
 });
 $('filterInput').addEventListener('input', (event) => { state.filter = event.target.value; state.page = 0; renderTable(); });
@@ -997,7 +1014,7 @@ $('hideDuplicates').addEventListener('change', (event) => {
 $('verifyDuplicates').addEventListener('click', async () => {
   state.duplicateOperationId = crypto.randomUUID();
   state.duplicateCheckBusy = true;
-  $('duplicateCheckStatus').textContent = 'Préparation…';
+  $('duplicateCheckStatus').textContent = t('Préparation…');
   updateDuplicateTools();
   try {
     const result = await window.projectTool.verifyDuplicates(state.duplicateOperationId, {
@@ -1005,19 +1022,19 @@ $('verifyDuplicates').addEventListener('click', async () => {
       files: state.files.map((file) => ({ id: file.id, include: file.include, duplicateManuallyChanged: file.duplicateManuallyChanged }))
     });
     if (result.cancelled) {
-      $('duplicateCheckStatus').textContent = 'Comparaison interrompue. Les résultats précédents sont conservés.';
+      $('duplicateCheckStatus').textContent = t('Comparaison interrompue. Les résultats précédents sont conservés.');
       return;
     }
     const messages = [];
-    if (result.identicalGroups) messages.push(`${result.identicalGroups} groupe(s) confirmé(s)`);
-    if (result.distinctFiles) messages.push(`${result.distinctFiles} fichier(s) distinct(s) réintégré(s)`);
-    if (result.unreadableGroups) messages.push(`${result.unreadableGroups} groupe(s) non vérifiable(s)`);
-    $('duplicateCheckStatus').textContent = messages.join(' · ') || 'Aucun doublon à confirmer.';
+    if (result.identicalGroups) messages.push(t('{n} groupe(s) confirmé(s)', { n: result.identicalGroups }));
+    if (result.distinctFiles) messages.push(t('{n} fichier(s) distinct(s) réintégré(s)', { n: result.distinctFiles }));
+    if (result.unreadableGroups) messages.push(t('{n} groupe(s) non vérifiable(s)', { n: result.unreadableGroups }));
+    $('duplicateCheckStatus').textContent = messages.join(' · ') || t('Aucun doublon à confirmer.');
     renderTable();
     renderProjectPreview();
   } catch (error) {
-    $('duplicateCheckStatus').textContent = 'La comparaison a échoué.';
-    showToast(error.message || 'Comparaison impossible.');
+    $('duplicateCheckStatus').textContent = t('La comparaison a échoué.');
+    showToast(error.message || t('Comparaison impossible.'));
   } finally {
     state.duplicateCheckBusy = false;
     state.duplicateOperationId = '';
@@ -1027,12 +1044,12 @@ $('verifyDuplicates').addEventListener('click', async () => {
 $('cancelDuplicateCheck').addEventListener('click', async () => {
   if (!state.duplicateOperationId) return;
   $('cancelDuplicateCheck').disabled = true;
-  $('cancelDuplicateCheck').textContent = 'Arrêt…';
-  $('duplicateCheckStatus').textContent = 'Arrêt de la comparaison…';
+  $('cancelDuplicateCheck').textContent = t('Arrêt…');
+  $('duplicateCheckStatus').textContent = t('Arrêt de la comparaison…');
   try { await window.projectTool.cancelOperation(state.duplicateOperationId); } catch (_) {
     $('cancelDuplicateCheck').disabled = false;
-    $('cancelDuplicateCheck').textContent = 'Arrêter';
-    $('duplicateCheckStatus').textContent = 'Impossible d’arrêter la comparaison.';
+    $('cancelDuplicateCheck').textContent = t('Arrêter');
+    $('duplicateCheckStatus').textContent = t('Impossible d’arrêter la comparaison.');
   }
 });
 $('retryConnection').addEventListener('click', async () => {
