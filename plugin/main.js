@@ -176,6 +176,7 @@ async function probeWithFFprobe(filePath, signal) {
       date: normalizeDate(recorded || origination),
       time: normalizeTime(recorded || origination),
       timecode: metadataValue(tags, ['timecode']),
+      colorTransfer: cleanText(streams.find((stream) => stream.codec_type === 'video')?.color_transfer),
       duration: Number.isFinite(duration) && duration > 0 ? duration : null,
       format: frameRate(streams),
       verified: streams.length > 0
@@ -290,7 +291,7 @@ async function enrichFile(file, signal) {
     cameraBrand: isVideo ? normalizeBrand(rawMake, rawModel) || '' : '',
     cameraModel: isVideo ? rawModel : '',
     captureGamma: isVideo ? metadata.captureGamma || '' : '',
-    colorProfile: isVideo ? profileFromMetadata(normalizeBrand(rawMake, rawModel), rawModel, metadata.captureGamma) || '' : '',
+    colorProfile: isVideo ? profileFromMetadata(normalizeBrand(rawMake, rawModel), rawModel, metadata.captureGamma, metadata.colorTransfer) || '' : '',
     // Son direct : date gardée pour synchroniser jour par jour (le timecode se répète d'un jour à l'autre).
     shootingDate: isVideo || isSyncAudio ? shootingDate : '',
     shootingTime: isVideo || isSyncAudio ? shootingTime : '',

@@ -55,3 +55,26 @@ test('chaque profil a un espace d’entrée, et seuls les profils sans .drx sont
     assert.equal(hasPreset, !c.MANAGED_ONLY.has(key), key);
   }
 });
+
+test('profileFromMetadata : gamma Canon et autres logs lus dans le XML', () => {
+  assert.equal(c.profileFromMetadata('Canon', 'EOS C70', 'canon-log3'), 'canon-clog3');
+  assert.equal(c.profileFromMetadata('Canon', 'EOS C70', 'Canon Log 2'), 'canon-clog2');
+  assert.equal(c.profileFromMetadata('Canon', 'EOS C70', 'c-log3'), 'canon-clog3');
+  assert.equal(c.profileFromMetadata('Canon', 'EOS C70', 'bt709'), 'none');
+  assert.equal(c.profileFromMetadata('Panasonic', 'S1H', 'v-log'), 'panasonic-vlog');
+  assert.equal(c.profileFromMetadata('Fujifilm', 'X-H2S', 'f-log2'), 'fujifilm-flog2');
+  assert.equal(c.profileFromMetadata('Sony', 'ILME-FX3', 's-log2'), null);
+});
+
+test('profileFromMetadata : fonction de transfert ffprobe, sans écraser le XML ni se fier à bt709', () => {
+  assert.equal(c.profileFromMetadata('Sony', 'ILME-FX3', '', 'arib-std-b67'), 'none');
+  assert.equal(c.profileFromMetadata('Apple', 'iPhone 15 Pro', '', 'smpte2084'), 'none');
+  assert.equal(c.profileFromMetadata('Sony', 'ILME-FX3', '', 'bt709'), 'sony-slog3');
+  assert.equal(c.profileFromMetadata('Sony', 'ILME-FX3', 's-log3-cine', 'arib-std-b67'), 'sony-slog3');
+  assert.equal(c.profileFromMetadata('Apple', 'iPhone 15 Pro', '', 'apple-log'), 'apple-log');
+  assert.equal(c.profileFromMetadata('Nikon', 'Z9', '', 'bt709'), null);
+});
+
+test('profileFromMetadata : « canon-log » seul n’est pas pris pour N-Log', () => {
+  assert.equal(c.profileFromMetadata('Canon', 'EOS C70', 'canon-log'), null);
+});

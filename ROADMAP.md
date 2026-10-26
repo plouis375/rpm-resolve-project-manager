@@ -46,8 +46,8 @@ Coche chaque point une fois livré, avec la version correspondante.
 - Pour chaque profil : un preset `.drx` par sortie (Rec.709-A et Gamma 2.4) exporté depuis Resolve dans `plugin/presets/`, l'entrée dans `PROFILES`, le libellé dans `renderer.js` (`COLOR_PROFILES`) et les tests. Avec la gestion couleur (2.1), on n'a besoin que du nom de l'espace d'entrée.
 
 ### 2.3 Détection du profil depuis le fichier
-- [ ] Lire le gamma dans les XML Canon. Un C70 peut tourner en Canon Log 3, alors qu'aujourd'hui seul le modèle décide.
-- [ ] Utiliser `color_transfer` et `color_primaries` de ffprobe (`arib-std-b67` pour le HLG, Apple Log…) pour distinguer log et vidéo sans XML.
+- [x] (v0.27.0, motifs à confirmer sur un vrai XML) Lire le gamma dans les XML Canon. Un C70 peut tourner en Canon Log 3, alors qu'aujourd'hui seul le modèle décide.
+- [x] (v0.27.0, HLG/PQ → pas de CST, Apple Log) Utiliser `color_transfer` et `color_primaries` de ffprobe (`arib-std-b67` pour le HLG, Apple Log…) pour distinguer log et vidéo sans XML.
 
 ## 3. Réglages et proxies
 

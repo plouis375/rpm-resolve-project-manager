@@ -56,16 +56,43 @@ function profileForCamera(brand = '', model = '') {
   return CAMERAS.find(([pattern]) => pattern.test(input))?.[1] || null;
 }
 
-// Profil à partir de la caméra et, si le fichier l’indique (Sony), du gamma enregistré.
+// Gamma enregistré dans un XML (Sony, Canon) → profil. Les motifs sont tolérants : « canon-log2 », « c-log2 », « clog2 »…
+const GAMMA_PATTERNS = [
+  [/\bs[\s_-]?log3/, 'sony-slog3'],
+  [/\bc[\s_-]?log[\s_-]?3|\bcanon[\s_-]?log[\s_-]?3/, 'canon-clog3'],
+  [/\bc[\s_-]?log[\s_-]?2|\bcanon[\s_-]?log[\s_-]?2/, 'canon-clog2'],
+  [/\bv[\s_-]?log/, 'panasonic-vlog'],
+  [/\bf[\s_-]?log[\s_-]?2/, 'fujifilm-flog2'],
+  [/\bf[\s_-]?log/, 'fujifilm-flog'],
+  [/\bn[\s_-]?log/, 'nikon-nlog'],
+  [/\bd[\s_-]?log/, 'dji-dlog'],
+  [/apple[\s_-]?log/, 'apple-log'],
+  [/log[\s_-]?c[\s_-]?4/, 'arri-logc4'],
+  [/log[\s_-]?c[\s_-]?3?\b/, 'arri-logc3'],
+  [/log3g10/, 'red-log3g10'],
+  [/film[\s_-]?gen[\s_-]?5/, 'bmd-filmgen5']
+];
+
+// Fonction de transfert lue par ffprobe (color_transfer). Seuls les cas sans ambiguïté comptent :
+// beaucoup de caméras étiquettent leurs fichiers log « bt709 », donc bt709 ne prouve rien.
+function profileFromTransfer(colorTransfer = '') {
+  const transfer = String(colorTransfer || '').toLowerCase();
+  if (/apple/.test(transfer)) return 'apple-log';
+  if (transfer === 'arib-std-b67' || transfer === 'smpte2084') return 'none'; // HLG, PQ : déjà en vidéo
+  return null;
+}
+
+// Profil à partir du gamma du XML, puis de la fonction de transfert du fichier, puis de la caméra.
 // Retourne un profil, 'none' (gamma non log : pas de CST) ou null (inconnu).
-function profileFromMetadata(brand = '', model = '', captureGamma = '') {
+function profileFromMetadata(brand = '', model = '', captureGamma = '', colorTransfer = '') {
   const gamma = String(captureGamma || '').toLowerCase();
   if (gamma) {
-    if (/s-?log3/.test(gamma)) return 'sony-slog3';
-    if (/log/.test(gamma)) return null; // autre log (S-Log2…) : pas de preset, à choisir à la main
+    const match = GAMMA_PATTERNS.find(([pattern]) => pattern.test(gamma));
+    if (match) return match[1];
+    if (/log/.test(gamma)) return null; // autre log (S-Log2…) : pas de profil, à choisir à la main
     return 'none'; // Rec.709, HLG, S-Cinetone… : déjà en vidéo
   }
-  return profileForCamera(brand, model);
+  return profileFromTransfer(colorTransfer) || profileForCamera(brand, model);
 }
 
 function presetFileName(profile, output) {
@@ -73,4 +100,4 @@ function presetFileName(profile, output) {
   return `${profile}_${output}.drx`;
 }
 
-module.exports = { MANAGED_ONLY, PROFILES, OUTPUTS, COLOR_MANAGED_MODE, INPUT_COLOR_SPACES, MANAGED_TIMELINE_SPACE, MANAGED_OUTPUT_SPACES, profileForCamera, profileFromMetadata, presetFileName };
+module.exports = { MANAGED_ONLY, PROFILES, OUTPUTS, COLOR_MANAGED_MODE, INPUT_COLOR_SPACES, MANAGED_TIMELINE_SPACE, MANAGED_OUTPUT_SPACES, profileForCamera, profileFromMetadata, profileFromTransfer, presetFileName };

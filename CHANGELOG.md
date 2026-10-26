@@ -1,5 +1,11 @@
 # Historique des versions
 
+## v0.27.0 — 26 octobre 2026
+
+- **Détection du profil depuis le fichier.** Le gamma lu dans les XML (Sony, et Canon quand le XML l’indique) détermine désormais Canon Log 2 et 3 en plus de S-Log3, ainsi que V-Log, F-Log, N-Log, D-Log, LogC, Log3G10 et Film Gen 5 : un C70 tourné en Canon Log 3 n’est plus classé selon son seul modèle.
+- Sans XML, la fonction de transfert lue par ffprobe écarte les fichiers HLG et PQ (pas de CST) et reconnaît Apple Log. « bt709 » ne prouve rien (beaucoup de caméras étiquettent ainsi leurs fichiers log) : dans ce cas le modèle de la caméra décide, comme avant.
+- Le format exact du gamma dans les XML Canon n’a pas été vérifié sur de vrais fichiers : les motifs sont tolérants (« canon-log3 », « c-log3 »…). À confirmer avec un XML de C70.
+
 ## v0.26.0 — 26 octobre 2026
 
 - **Plus de caméras et de profils log.** Sony S-Log3 sur davantage de modèles (FX30, A7S III, A7 IV, A1, A7R V, ZV-E1, FR7) : le gamma lu dans le XML Sony décide toujours en premier. Dix nouveaux profils à choisir à la main dans la colonne « Profil couleur » : Panasonic V-Log, Fujifilm F-Log et F-Log2, Nikon N-Log, DJI D-Log, Apple Log, ARRI LogC3 et LogC4, RED Log3G10, Blackmagic Film Gen 5.
