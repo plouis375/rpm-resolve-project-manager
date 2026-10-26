@@ -349,6 +349,46 @@ async function buildTimelines({ project, mediaPool, bins, root, name, importedRu
   return { timelineName, timelineFormat, timelineWarning, colorReport, extraTimelines };
 }
 
+// Un clip multicam par jour de tournage : un angle par rush, calés par timecode ou par forme d’onde.
+// Les constantes resolve.MULTICAM_* viennent de l’objet Resolve ; sans elles, on laisse les valeurs par défaut.
+function multicamOptions(day, mode, constants = {}) {
+  const settings = { name: `${day} — Multicam`, createBinForSourceClips: false };
+  const sync = mode === 'waveform' ? constants.MULTICAM_ANGLE_SYNC_AUDIO : constants.MULTICAM_ANGLE_SYNC_TIMECODE;
+  if (sync !== undefined) settings.angleSyncMode = sync;
+  if (constants.MULTICAM_ANGLE_NAME_FILE !== undefined) settings.angleNameMode = constants.MULTICAM_ANGLE_NAME_FILE;
+  if (constants.MULTICAM_DETECT_NONE !== undefined) settings.detectSameCameraClipsMode = constants.MULTICAM_DETECT_NONE;
+  return settings;
+}
+
+async function createMulticamClips({ mediaPool, bins, root, importedRushes, mode, constants, progress, logger, syncMs }) {
+  const report = { days: [], skipped: [] };
+  const days = new Map();
+  for (const entry of importedRushes) {
+    const day = DATE_PATTERN.test(entry.file.shootingDate || '') ? entry.file.shootingDate : 'Date inconnue';
+    if (!days.has(day)) days.set(day, []);
+    days.get(day).push(entry);
+  }
+  const plans = [...days].sort((a, b) => a[0].localeCompare(b[0]));
+  try { await mediaPool.SetCurrentFolder(bins.Séquences || root); } catch (error) { warnResolve('SetCurrentFolder (multicam)', error, logger); }
+  for (let index = 0; index < plans.length; index += 1) {
+    const [day, entries] = plans[index];
+    progress('multicam', index, plans.length, `Clip multicam · ${day}`);
+    if (entries.length < 2) { report.skipped.push(day); continue; }
+    let created = null;
+    try { created = await withTimeout(mediaPool.CreateMulticamClip(entries.map(({ item }) => item), multicamOptions(day, mode, constants)), syncMs); } catch (error) { warnResolve(`CreateMulticamClip ${day}`, error, logger); }
+    report.days.push({ day, ok: Array.isArray(created) ? created.length > 0 : Boolean(created), angles: entries.length });
+  }
+  progress('multicam', plans.length, plans.length, 'Clips multicam');
+  return report;
+}
+
+function multicamWarning(report) {
+  if (!report) return '';
+  if (!report.days.length) return 'Multicam : aucun jour ne réunit au moins deux rushs.';
+  const failed = report.days.filter((day) => !day.ok).map((day) => day.day);
+  return failed.length ? `Resolve n’a pas créé le clip multicam pour ${failed.join(', ')}.` : '';
+}
+
 function syncWarning(report) {
   if (!report) return '';
   if (report.unavailable) return 'Synchro du son impossible : cette version de Resolve n’expose pas la synchro par forme d’onde. Essaie le timecode.';
@@ -414,6 +454,12 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
       if (syncReport.days.some((day) => day.ok)) await checkpoint();
     }
 
+    let multicamReport = null;
+    if (options.createMulticam) {
+      multicamReport = await createMulticamClips({ mediaPool, bins, root, importedRushes: imported.importedRushes, mode: options.syncMode, constants: resolveConstants, progress, logger, syncMs });
+      if (multicamReport.days.some((day) => day.ok)) await checkpoint();
+    }
+
     const timelines = await buildTimelines({ project, mediaPool, bins, root, name, importedRushes: imported.importedRushes, options, timelineSettings, progress, presetDir, logger, checkpoint, cstMs });
     const { timelineName, timelineFormat, colorReport, extraTimelines } = timelines;
     let timelineWarning = timelines.timelineWarning;
@@ -433,8 +479,10 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
       extraTimelines,
       colorReport,
       syncReport,
+      multicamReport,
       warning: [timelineWarning,
         syncWarning(syncReport),
+        multicamWarning(multicamReport),
         colorReport?.unrecognized.length ? `${colorReport.unrecognized.length} plan(s) sans CST : caméra non reconnue.` : '',
         colorReport?.failed.length ? `Resolve n’a pas appliqué le CST sur ${colorReport.failed.length} plan(s).` : '',
         failures.length ? `${failures.length} média(s) n’ont pas été importés.` : '',
@@ -451,4 +499,4 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
   }
 }
 
-module.exports = { createProjectInResolve, safeBinName, audioSyncSettings, DEFAULT_TIMEOUTS };
+module.exports = { createProjectInResolve, safeBinName, audioSyncSettings, multicamOptions, DEFAULT_TIMEOUTS };

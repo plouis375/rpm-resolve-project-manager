@@ -9,7 +9,7 @@ const FOLDERS = [{ id: 'Rushs', name: 'Rushs' }, { id: 'Exports', name: 'Exports
 
 // Faux Resolve : chutiers, imports, timelines et CST, avec compteurs pour les assertions.
 function fakeResolve(overrides = {}) {
-  const state = { saves: 0, timelines: [], imported: [], grades: [], syncs: [], existing: overrides.existing || [] };
+  const state = { saves: 0, timelines: [], imported: [], grades: [], syncs: [], multicams: [], existing: overrides.existing || [] };
   const makeFolder = (name) => {
     const children = [];
     return { name, children, GetName: async () => name, GetSubFolderList: async () => children };
@@ -40,6 +40,7 @@ function fakeResolve(overrides = {}) {
     }),
     ImportTimelineFromFile: async () => ({}),
     AutoSyncAudio: overrides.autoSyncAudio || (async (items, settings) => { state.syncs.push({ paths: items.map((i) => i.path), settings }); return true; }),
+    CreateMulticamClip: overrides.createMulticam || (async (clips, options) => { state.multicams.push({ paths: clips.map((c) => c.path), options }); return [{}]; }),
     CreateTimelineFromClips: async (name, clips) => {
       const timeline = makeTimeline(name, clips.map((clip) => ({ path: clip.path })));
       state.timelines.push({ name, count: clips.length, paths: clips.map((clip) => clip.path), timeline });
@@ -200,4 +201,30 @@ test('forme d’onde indisponible sans constante Resolve', async () => {
   assert.equal(fake.state.syncs.length, 0);
   assert.equal(result.syncReport.unavailable, true);
   assert.match(result.warning, /forme d’onde/);
+});
+
+const MULTICAM_CONSTANTS = { MULTICAM_ANGLE_SYNC_TIMECODE: 2, MULTICAM_ANGLE_SYNC_AUDIO: 3, MULTICAM_ANGLE_NAME_FILE: 4, MULTICAM_DETECT_NONE: 5 };
+
+test('crée un clip multicam par jour avec au moins deux rushs', async () => {
+  const fake = fakeResolve();
+  const selected = [file('A001.mov'), file('B001.mov', { cameraModel: 'FX6' }), file('A002.mov', { shootingDate: '2026-09-13' })];
+  const result = await run(fake, selected, { ...baseOptions, createTimeline: false, applyCst: false, createMulticam: true, syncMode: 'timecode' }, { resolveConstants: MULTICAM_CONSTANTS });
+  assert.deepEqual(fake.state.multicams.map((m) => m.paths), [['/src/A001.mov', '/src/B001.mov']]);
+  assert.deepEqual(fake.state.multicams[0].options, { name: '2026-09-12 — Multicam', createBinForSourceClips: false, angleSyncMode: 2, angleNameMode: 4, detectSameCameraClipsMode: 5 });
+  assert.deepEqual(result.multicamReport.days, [{ day: '2026-09-12', ok: true, angles: 2 }]);
+  assert.deepEqual(result.multicamReport.skipped, ['2026-09-13']);
+});
+
+test('multicam calé sur le son en mode forme d’onde', async () => {
+  const fake = fakeResolve();
+  await run(fake, [file('A001.mov'), file('B001.mov')], { ...baseOptions, createTimeline: false, applyCst: false, createMulticam: true, syncMode: 'waveform' }, { resolveConstants: MULTICAM_CONSTANTS });
+  assert.equal(fake.state.multicams[0].options.angleSyncMode, 3);
+});
+
+test('un multicam refusé par Resolve est signalé sans bloquer la création', async () => {
+  const fake = fakeResolve({ createMulticam: async () => [] });
+  const result = await run(fake, [file('A001.mov'), file('B001.mov')], { ...baseOptions, applyCst: false, createMulticam: true });
+  assert.equal(result.ok, true);
+  assert.equal(result.timelineName, 'Projet test — Assemblage');
+  assert.match(result.warning, /pas créé le clip multicam pour 2026-09-12/);
 });

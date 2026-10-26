@@ -61,7 +61,8 @@ function runOperation(event, operationId, task) {
 
 const AUDIO_SYNC_CONSTANTS = [
   'AUDIO_SYNC_MODE', 'AUDIO_SYNC_CHANNEL_NUMBER', 'AUDIO_SYNC_RETAIN_EMBEDDED_AUDIO', 'AUDIO_SYNC_RETAIN_VIDEO_METADATA',
-  'AUDIO_SYNC_WAVEFORM', 'AUDIO_SYNC_TIMECODE', 'AUDIO_SYNC_CHANNEL_AUTOMATIC'
+  'AUDIO_SYNC_WAVEFORM', 'AUDIO_SYNC_TIMECODE', 'AUDIO_SYNC_CHANNEL_AUTOMATIC',
+  'MULTICAM_ANGLE_SYNC_TIMECODE', 'MULTICAM_ANGLE_SYNC_AUDIO', 'MULTICAM_ANGLE_NAME_FILE', 'MULTICAM_DETECT_NONE'
 ];
 
 // Constantes resolve.AUDIO_SYNC_* pour MediaPool.AutoSyncAudio ; absentes sur les versions qui ne les exposent pas.
@@ -608,7 +609,7 @@ async function createProject(event, options) {
       options,
       progress: (stage, current, total, label) => sendProgress(event, { stage, current, total, label }),
       presetDir: path.join(__dirname, 'presets'),
-      resolveConstants: options.syncAudio ? await readResolveConstants() : {}
+      resolveConstants: (options.syncAudio || options.createMulticam) ? await readResolveConstants() : {}
     });
     scanSnapshots.delete(options.scanId);
     return result;

@@ -785,6 +785,7 @@ async function createProjectNow() {
       timelineOrder: $('timelineOrder').value,
       syncAudio: $('syncAudio').checked,
       syncMode: $('syncMode').value,
+      createMulticam: $('createMulticam').checked,
       folders: state.folders.map(({ id, name }) => ({ id, name })),
       files: state.files.map(({ id, category, cameraBrand, cameraModel, shootingDate, colorProfile, include }) => ({ id, category, cameraBrand, cameraModel, shootingDate, colorProfile: colorProfile || '', include }))
     });
@@ -874,14 +875,21 @@ try {
     if (saved && [...$(id).options].some((option) => option.value === saved)) $(id).value = saved;
   } catch (_) {}
 });
+const updateSyncControls = () => { $('syncControls').hidden = !($('syncAudio').checked || $('createMulticam').checked); };
 $('syncAudio').addEventListener('change', (event) => {
-  $('syncControls').hidden = !event.target.checked;
+  updateSyncControls();
   try { localStorage.setItem('rpm.syncAudio', event.target.checked ? '1' : '0'); } catch (_) {}
 });
 try {
   $('syncAudio').checked = localStorage.getItem('rpm.syncAudio') === '1';
-  $('syncControls').hidden = !$('syncAudio').checked;
+  updateSyncControls();
 } catch (_) {}
+$('createMulticam').addEventListener('change', (event) => {
+  updateSyncControls();
+  try { localStorage.setItem('rpm.createMulticam', event.target.checked ? '1' : '0'); } catch (_) {}
+});
+try { $('createMulticam').checked = localStorage.getItem('rpm.createMulticam') === '1'; } catch (_) {}
+updateSyncControls();
 $('backToSources').addEventListener('click', () => setStep(2));
 $('uninstallPlugin').addEventListener('click', async () => {
   try { await window.projectTool.uninstall(); } catch (error) { showToast(error.message); }

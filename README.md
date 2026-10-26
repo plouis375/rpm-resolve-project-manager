@@ -181,6 +181,10 @@ Avec **Synchroniser le son enregistré à part**, Resolve associe les fichiers *
 
 Le son caméra est conservé, et les timelines d’assemblage reprennent le son synchronisé. La synchro se fait jour par jour, car un timecode « heure du jour » se répète d’un jour à l’autre. La date d’un fichier son vient de ses métadonnées BWF, sinon de sa date de création. Le rapport final liste les jours que Resolve n’a pas confirmés.
 
+## 🎬 Clips multicam
+
+Avec **Créer un clip multicam par jour**, chaque jour de tournage qui compte au moins deux rushs reçoit un clip multicam dans Séquences : un angle par fichier, calé par timecode ou par forme d’onde selon le réglage « Synchroniser par ». Le son direct déjà synchronisé suit les plans.
+
 <a id="cst"></a>
 
 ## 🎨 Color Space Transform

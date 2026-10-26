@@ -1,5 +1,9 @@
 # Historique des versions
 
+## v0.21.0 — 26 octobre 2026
+
+- **Clip multicam par jour** (option de l’étape Organisation) : après l’import et la synchro du son, un clip multicam par jour de tournage réunit les rushs de toutes les caméras, un angle par fichier (`MediaPool.CreateMulticamClip`). Le calage suit le réglage « Synchroniser par » (timecode ou forme d’onde). Les clips sont rangés dans Séquences et le rapport signale les jours que Resolve n’a pas pu traiter.
+
 ## v0.20.0 — 26 octobre 2026
 
 - **Synchro du son enregistré à part** (option de l’étape Organisation) : après l’import, Resolve associe les fichiers WAV et AIFF retenus aux rushs du même jour, par timecode ou par forme d’onde (`MediaPool.AutoSyncAudio`). Le son caméra est conservé, et les timelines d’assemblage reprennent le son synchronisé. Le rapport final indique les jours synchronisés et ceux à vérifier.

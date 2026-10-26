@@ -20,7 +20,7 @@ Coche chaque point une fois livré, avec la version correspondante.
 ## 1. Fonctions à fort impact
 
 ### 1.1 Clips multicam par jour
-- [ ] `MediaPool.CreateMulticamClip` et `Timeline.AutoAlignClips` (nouveaux en 21.1).
+- [x] `MediaPool.CreateMulticamClip` (v0.21.0, un angle par fichier ; `AutoAlignClips` n’est pas nécessaire).
 - Option « Créer un clip multicam par jour » : un angle par caméra, alignés par timecode (ou par son), plus le son direct synchronisé.
 - Lire les options exactes dans `DaVinciResolveScript.pyi` (types `MulticamClipOptions` / `AutoAlignOptions`).
 
