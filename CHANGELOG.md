@@ -1,5 +1,10 @@
 # Historique des versions
 
+## v0.30.0 — 26 octobre 2026
+
+- **Exporter le rapport** : un bouton à l’étape Terminé enregistre le rapport en TXT ou en CSV (séparateur « ; » et UTF-8, ouvert directement par Excel). Il liste chaque fichier avec son statut (importé, échec, à vérifier), les plans sans CST ou refusés, les jours de synchro non confirmés, les multicams, proxies et métadonnées refusés.
+- Les avertissements Resolve jusqu’ici visibles seulement dans la console (`warnResolve`) remontent dans ce rapport.
+
 ## v0.29.0 — 26 octobre 2026
 
 - **Proxies existants liés automatiquement.** L’analyse repère un sous-dossier `proxy` (celui de Blackmagic Proxy Generator) contenant un fichier du même nom que le rush, avec n’importe quelle extension vidéo. Après l’import, chaque proxy trouvé est associé au plan avec `MediaPoolItem.LinkProxyMedia`. Le rapport indique le nombre de proxies liés, et signale ceux que Resolve refuse. Les dossiers `proxy` restent exclus de la liste des médias.

@@ -6,6 +6,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { createReadStream } = require('node:fs');
 const WorkflowIntegration = require('./WorkflowIntegration.node');
+const { buildTextReport, buildCsvReport } = require('./lib/report');
 const { findProxy } = require('./lib/proxies');
 const { addWatchFolders, isProcessRunning } = require('./proxy-settings');
 const {
@@ -646,6 +647,19 @@ function registerHandlers() {
       const presets = (await current?.GetProjectSettingsPresetList()) || [];
       return presets.map((preset) => cleanText(preset?.Name)).filter(Boolean);
     } catch (_) { return []; }
+  });
+  ipcMain.handle('tool:export-report', async (_event, result) => {
+    if (!result || typeof result !== 'object' || typeof result.projectName !== 'string') throw new Error('Rapport indisponible.');
+    const safeName = safeBinName(result.projectName, 'Projet');
+    const choice = await dialog.showSaveDialog(mainWindow, {
+      title: 'Exporter le rapport',
+      defaultPath: path.join(app.getPath('documents'), `Rapport RPM — ${safeName}.txt`),
+      filters: [{ name: 'Texte', extensions: ['txt'] }, { name: 'CSV (Excel)', extensions: ['csv'] }]
+    });
+    if (choice.canceled || !choice.filePath) return null;
+    const csv = path.extname(choice.filePath).toLowerCase() === '.csv';
+    await fs.writeFile(choice.filePath, csv ? buildCsvReport(result) : buildTextReport(result), 'utf8');
+    return choice.filePath;
   });
   ipcMain.handle('tool:reconnect', connectResolve);
   ipcMain.handle('tool:choose-sources', async () => {

@@ -744,6 +744,7 @@ function updateCreateProgress(progress) {
 }
 
 function renderCompletion(result) {
+  state.lastResult = result;
   setStep(4);
   const hasWarning = Boolean(result.warning || result.failedNames?.length);
   $('completionMark').classList.toggle('warning-mark', hasWarning);
@@ -866,6 +867,13 @@ document.querySelectorAll('.step').forEach((button) => button.addEventListener('
   if (target < state.step && target < 4) setStep(target);
 }));
 $('closeTop').addEventListener('click', () => window.projectTool.close());
+$('exportReport').addEventListener('click', async () => {
+  if (!state.lastResult) return;
+  try {
+    const saved = await window.projectTool.exportReport(state.lastResult);
+    if (saved) showToast('Rapport enregistré.');
+  } catch (error) { showToast(error.message || 'Export du rapport impossible.'); }
+});
 $('finish').addEventListener('click', () => window.projectTool.finish());
 $('openProxyGenerator').addEventListener('click', async () => {
   const button = $('openProxyGenerator');

@@ -206,6 +206,10 @@ Si tu as enregistré des presets de réglages de projet dans Resolve, une liste 
 
 Si un rush a déjà un proxy dans un sous-dossier `proxy` voisin (même nom de fichier, extension vidéo quelconque), il est lié automatiquement au plan après l’import. Le rapport final compte les proxies liés. Cela évite de régénérer des proxies déjà faits.
 
+## 📄 Rapport exporté
+
+À l’étape Terminé, **Exporter le rapport** enregistre un fichier TXT ou CSV : statut de chaque fichier, plans sans CST, jours dont la synchro n’est pas confirmée, éléments refusés par Resolve et avertissements techniques. Le CSV s’ouvre directement dans Excel.
+
 <a id="cst"></a>
 
 ## 🎨 Color Space Transform

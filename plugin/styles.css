@@ -257,6 +257,7 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); }
 .proxy-guide p { margin: 7px 0; color: var(--secondary); font-size: 12px; line-height: 1.5; }
 .proxy-source-list { max-height: 72px; overflow: auto; margin: 8px 0; padding-left: 18px; color: var(--text); font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .proxy-guide .button { margin-top: 5px; }
+.completion-actions { display: flex; gap: 10px; }
 .completion-footer { display: flex; width: min(900px, 100%); align-items: center; justify-content: space-between; gap: 20px; margin-top: 36px; padding-top: 14px; border-top: 1px solid var(--line); text-align: left; }
 .toast { position: fixed; z-index: 3; right: 26px; bottom: 83px; max-width: 440px; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-raised); color: var(--ink); font-size: 12px; font-weight: 500; line-height: 1.45; opacity: 0; pointer-events: none; transform: translateY(5px); transition: opacity 160ms ease-out, transform 160ms ease-out; }
 .toast.visible { opacity: 1; transform: translateY(0); }

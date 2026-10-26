@@ -64,7 +64,7 @@ Coche chaque point une fois livré, avec la version correspondante.
 ## 4. Confort et fiabilité
 
 ### 4.1 Exporter le rapport
-- [ ] Bouton « Exporter le rapport » à l'étape Terminé : TXT ou CSV avec les imports, les échecs, les plans sans CST et les jours non synchronisés.
+- [x] (v0.30.0) Bouton « Exporter le rapport » à l'étape Terminé : TXT ou CSV avec les imports, les échecs, les plans sans CST et les jours non synchronisés.
 - Faire remonter les avertissements Resolve (`warnResolve`, aujourd'hui seulement dans la console) dans ce rapport.
 
 ### 4.2 Vérifier les mises à jour

@@ -331,3 +331,10 @@ test('sans proxy existant, aucun rapport de proxies', async () => {
   const result = await run(fakeResolve(), [file('A001.mov')], { ...baseOptions, createTimeline: false, applyCst: false });
   assert.equal(result.proxyReport, null);
 });
+
+test('le résultat liste le statut de chaque fichier et les avertissements Resolve pour le rapport', async () => {
+  const fake = fakeResolve({ setClipColor: () => { throw new Error('boom'); } });
+  const result = await run(fake, [file('A001.mov')], { ...baseOptions, createTimeline: false, applyCst: false, colorClips: true }, { logger: console.warn && { warn: () => {} } });
+  assert.deepEqual(result.files, [{ name: 'A001.mov', path: '/src/A001.mov', status: 'imported' }]);
+  assert.ok(result.resolveWarnings.some((message) => /SetClipColor/.test(message) && /boom/.test(message)));
+});

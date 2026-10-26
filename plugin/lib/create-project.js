@@ -491,7 +491,10 @@ function syncWarning(report) {
 }
 
 // Crée le projet et renvoie le rapport. `selected` = fichiers retenus, `folders` = chutiers validés.
-async function createProjectInResolve({ projectManager, name, folders, selected, totalCount, options, progress = () => {}, presetDir, logger = console, timeouts = {}, resolveConstants = {} }) {
+async function createProjectInResolve({ projectManager, name, folders, selected, totalCount, options, progress = () => {}, presetDir, logger: outerLogger = console, timeouts = {}, resolveConstants = {} }) {
+  // Les échecs Resolve non bloquants sont aussi gardés pour le rapport exportable.
+  const resolveWarnings = [];
+  const logger = { warn: (...args) => { resolveWarnings.push(args.join(' ')); outerLogger.warn?.(...args); } };
   const { importMs, cstMs, syncMs } = { ...DEFAULT_TIMEOUTS, ...timeouts };
   const checkpoint = async () => {
     try { await projectManager.SaveProject(); } catch (error) { warnResolve('SaveProject (checkpoint)', error, logger); }
@@ -601,6 +604,12 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
     return {
       ok: true,
       projectName: name,
+      files: selected.map((file) => ({
+        name: file.name,
+        path: file.filePath,
+        status: failures.includes(file.name) || sequenceFailures.includes(file.name) ? 'failed' : unverified.includes(file.name) ? 'unverified' : 'imported'
+      })),
+      resolveWarnings,
       importedCount: selected.length - failures.length - sequenceFailures.length,
       excludedCount: totalCount - selected.length,
       failedNames: [...failures, ...sequenceFailures],
