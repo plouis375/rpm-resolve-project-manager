@@ -58,7 +58,7 @@ Coche chaque point une fois livré, avec la version correspondante.
 - [x] (v0.29.0) Le scan ignore les dossiers `proxy`. Quand un proxy correspondant existe, l'associer avec `MediaPoolItem.LinkProxyMedia(path)` après l'import, et le compter dans le rapport.
 
 ### 3.3 Copie des cartes avec vérification ⚠️
-- [ ] `MediaStorage.StartCloneMedia`, `GetCloneStatus` et `SetCloneToolSettings` (21.1, le Clone Tool de Resolve).
+- [x] (v0.33.0, copie à la demande à l’étape Sources, PRODUCT.md mis à jour) `MediaStorage.StartCloneMedia`, `GetCloneStatus` et `SetCloneToolSettings` (21.1, le Clone Tool de Resolve).
 - ⚠️ Va contre PRODUCT.md (« pas de copie des sources ») : demander l'accord de l'auteur avant de commencer.
 
 ## 4. Confort et fiabilité

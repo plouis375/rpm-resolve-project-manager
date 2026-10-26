@@ -42,7 +42,7 @@ test('tout texte t(…) du code a une traduction anglaise', () => {
 
 test('tout texte visible de index.html a une traduction anglaise', () => {
   const html = read('index.html').replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, '');
-  const SAME = new Set(['RPM - Resolve Project Manager', 'HD · 1280 × 720', 'Full HD · 1920 × 1080', '2K DCI · 2048 × 1080', 'Ultra HD · 3840 × 2160', '4K DCI · 4096 × 2160', 'proxy', 'Français', 'English', 'Sources']);
+  const SAME = new Set(['RPM - Resolve Project Manager', 'HD · 1280 × 720', 'Full HD · 1920 × 1080', '2K DCI · 2048 × 1080', 'Ultra HD · 3840 × 2160', '4K DCI · 4096 × 2160', 'proxy', 'Français', 'English', 'Sources', 'MD5', 'SHA-256', 'xxHash 64']);
   const texts = [...html.matchAll(/>([^<>]+)</g)].map((m) => m[1].replace(/\s+/g, ' ').trim()).filter((text) => /[A-Za-zÀ-ÿ]{2}/.test(text) && !/^v\d/.test(text));
   const attrs = [...html.matchAll(/\b(?:placeholder|aria-label|title)="([^"]+)"/g)].map((m) => m[1].trim());
   const missing = [...texts, ...attrs].filter((text) => !SAME.has(text) && !(text in en));

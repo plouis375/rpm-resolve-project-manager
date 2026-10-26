@@ -10,6 +10,7 @@ const { buildTextReport, buildCsvReport } = require('./lib/report');
 const { throwIfAborted, scanDirectory, enrichFile, verifyDuplicateContents: compareDuplicateContents } = require('./lib/scan');
 const { addWatchFolders, isProcessRunning } = require('./proxy-settings');
 const { t, setLocale } = require('./lib/t');
+const { cloneCard, CHECKSUMS } = require('./lib/clone');
 const { cleanText, markDuplicates } = require('./lib/media');
 const { PROFILES } = require('./lib/cst');
 const { createProjectInResolve, safeBinName } = require('./lib/create-project');
@@ -55,6 +56,7 @@ function runOperation(event, operationId, task) {
 const AUDIO_SYNC_CONSTANTS = [
   'AUDIO_SYNC_MODE', 'AUDIO_SYNC_CHANNEL_NUMBER', 'AUDIO_SYNC_RETAIN_EMBEDDED_AUDIO', 'AUDIO_SYNC_RETAIN_VIDEO_METADATA',
   'AUDIO_SYNC_WAVEFORM', 'AUDIO_SYNC_TIMECODE', 'AUDIO_SYNC_CHANNEL_AUTOMATIC',
+  ...Object.values(CHECKSUMS),
   'MULTICAM_ANGLE_SYNC_TIMECODE', 'MULTICAM_ANGLE_SYNC_AUDIO', 'MULTICAM_ANGLE_NAME_FILE', 'MULTICAM_DETECT_NONE'
 ];
 
@@ -363,6 +365,36 @@ function registerHandlers() {
   });
   ipcMain.on('tool:locale', (event) => { event.returnValue = app.getLocale(); });
   ipcMain.handle('tool:set-locale', (_event, locale) => { setLocale(locale); return true; });
+  ipcMain.handle('tool:choose-clone-folders', async (_event, withBackup) => {
+    const source = await dialog.showOpenDialog(mainWindow, { title: t('Choisir la carte à copier'), buttonLabel: t('Choisir la carte'), properties: ['openDirectory'] });
+    if (source.canceled || !source.filePaths.length) return null;
+    const targets = [];
+    for (let index = 0; index < (withBackup ? 2 : 1); index += 1) {
+      const target = await dialog.showOpenDialog(mainWindow, {
+        title: index === 0 ? t('Choisir le dossier de destination') : t('Choisir le dossier de la seconde copie'),
+        buttonLabel: t('Copier ici'),
+        properties: ['openDirectory', 'createDirectory']
+      });
+      if (target.canceled || !target.filePaths.length) return null;
+      targets.push(target.filePaths[0]);
+    }
+    return { source: source.filePaths[0], targets };
+  });
+  ipcMain.handle('tool:clone-card', (event, operationId, options) => runOperation(event, operationId, async (signal) => {
+    if (!integrationReady || !resolveObj) throw new Error(integrationError || t('Connexion à Resolve indisponible.'));
+    const mediaStorage = await resolveObj.GetMediaStorage();
+    if (!mediaStorage) throw new Error(t('Resolve n’expose pas le stockage de médias.'));
+    const result = await cloneCard({
+      mediaStorage,
+      source: options?.source,
+      targets: options?.targets,
+      checksum: options?.checksum,
+      constants: await readResolveConstants(),
+      signal,
+      onProgress: (percent) => sendProgress(event, { stage: 'clone', current: Math.round(percent), total: 100, label: t('Copie de la carte vérifiée') })
+    });
+    return result;
+  }));
   ipcMain.handle('tool:reconnect', connectResolve);
   ipcMain.handle('tool:choose-sources', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {

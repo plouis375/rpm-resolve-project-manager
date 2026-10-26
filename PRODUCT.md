@@ -27,7 +27,7 @@ The product combines Resolve project setup, guided media classification, and cam
 - Runs inside DaVinci Resolve Studio on macOS as a Workflow Integration plugin, launched from `Workspace → Workflow Integrations`; the plugin opens in a separate window. The user has Resolve Studio 21.1.1 installed from Blackmagic Design's website.
 - Resolve registers the integration under its Workflow Integrations submenu. V1 does not replace or add a choice inside Resolve's native New Project dialog; the user opens the setup assistant from the Workspace menu.
 - Example project: “Campagne Nike 2026”.
-- Source media stays at its original Finder locations. The product does not create Finder folder structures or copy source media automatically.
+- Source media stays at its original Finder locations by default. The product does not create Finder folder structures and never copies media on its own. On explicit request in the Sources step, it can copy a memory card with checksum verification through Resolve's Clone Tool (optionally to a second backup location), then add the verified copy to the sources; the original card is never modified.
 - Media Pool bins: Rushs, Son, Assets, Éléments, Séquences, Musiques, Exports.
 
 ## Capabilities and Constraints

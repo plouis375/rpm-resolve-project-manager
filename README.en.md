@@ -74,7 +74,7 @@
 </table>
 
 > [!NOTE]
-> RPM works **inside Resolve only**: it does not create Finder folders, does not move or copy sources, and never modifies or deletes the original files.
+> RPM works **inside Resolve**: it does not create Finder folders, does not move sources, and never modifies or deletes the original files. It only copies a card when you ask it to (see *Card copy*).
 
 <a id="installation"></a>
 
@@ -227,6 +227,10 @@ In the Done step, **Export the report** saves a TXT or CSV file: status of each 
 ## 🔔 Updates
 
 On launch, a discreet banner tells you when a newer version is published on GitHub. Nothing is downloaded or installed automatically, and the plugin stays silent when offline.
+
+## 💾 Card copy
+
+In the Sources step, **Copy a card with verification** copies a memory card with Resolve's Clone Tool: choose the card, the destination (and a second backup copy if needed) and the verification (MD5, SHA-256, xxHash 64 or size only). The verified copy is then added to the sources. The original card is never modified, and nothing is copied unless you ask.
 
 <a id="cst"></a>
 

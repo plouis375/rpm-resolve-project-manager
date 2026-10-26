@@ -386,6 +386,7 @@ function addCustomBin() {
 
 function renderSources() {
   $('chooseSources').disabled = state.scanning || state.duplicateCheckBusy;
+  $('cloneCard').disabled = state.scanning || state.duplicateCheckBusy || !state.connected;
   $('chooseSources').querySelector('span').textContent = state.scanning && !state.refreshing ? t('Analyse…') : state.sourcePaths.length && !state.files.length ? t('Analyser') : t('Ajouter');
   $('refreshSources').disabled = !state.scanId || state.scanning || state.duplicateCheckBusy;
   $('refreshSources').querySelector('span').textContent = state.refreshing ? t('Lecture…') : t('Actualiser');
@@ -599,10 +600,10 @@ function renderReviewFilters() {
 function setScanProgress(progress) {
   const bar = $('progressBar');
   const text = $('progressText');
-  if (progress.stage !== 'scan') return;
+  if (progress.stage !== 'scan' && progress.stage !== 'clone') return;
   const percent = progress.total ? Math.round((progress.current / progress.total) * 100) : 0;
   bar.style.width = `${percent}%`;
-  text.textContent = `${progress.label} · ${progress.current} / ${progress.total}`;
+  text.textContent = progress.stage === 'clone' ? `${progress.label} · ${progress.current} %` : `${progress.label} · ${progress.current} / ${progress.total}`;
 }
 
 async function scanSelectedSources(pathsToScan = state.sourcePaths, previousState = null, forceRefresh = false) {
@@ -705,6 +706,49 @@ async function chooseSources() {
   } catch (error) {
     showToast(error.message || t('Impossible de choisir les dossiers.'));
   }
+}
+
+// Copie une carte avec vérification (Clone Tool de Resolve), puis ajoute la copie aux sources et l'analyse.
+async function cloneCardNow() {
+  if (state.scanning || state.duplicateCheckBusy || !state.connected) return;
+  let chosen;
+  try { chosen = await window.projectTool.chooseCloneFolders($('cloneBackup').checked); } catch (error) { return showToast(error.message || t('Impossible de choisir les dossiers.')); }
+  if (!chosen) return;
+  state.scanOperationId = crypto.randomUUID();
+  state.scanning = true;
+  $('scanProgress').hidden = false;
+  $('toOptions').disabled = true;
+  $('cloneCard').disabled = true;
+  renderSources();
+  $('progressBar').style.width = '0%';
+  $('progressText').textContent = t('Copie de la carte vérifiée');
+  let copied = null;
+  try {
+    const result = await window.projectTool.cloneCard(state.scanOperationId, { source: chosen.source, targets: chosen.targets, checksum: $('cloneChecksum').value });
+    if (result.cancelled) showToast(t('Copie interrompue. Les fichiers déjà copiés restent dans la destination.'));
+    else copied = result.copiedPaths;
+  } catch (error) {
+    showToast(error.message || t('Copie de la carte impossible.'));
+  } finally {
+    state.scanning = false;
+    state.scanOperationId = '';
+    $('scanProgress').hidden = true;
+    $('cloneCard').disabled = false;
+    $('cancelScan').disabled = false;
+    $('cancelScan').textContent = t('Arrêter');
+    renderSources();
+    formatSummary();
+  }
+  if (!copied) return;
+  showToast(t('Carte copiée et vérifiée. Analyse de la copie…'));
+  const next = [...new Set([...state.sourcePaths, copied[0]])];
+  const previousState = state.scanId ? { sourcePaths: [...state.sourcePaths], scanId: state.scanId, files: state.files } : null;
+  const added = next.filter((source) => !state.sourcePaths.includes(source));
+  if (!added.length) return;
+  state.sourcePaths = next;
+  renderSources();
+  renderTable();
+  await scanSelectedSources(added, previousState);
 }
 
 async function refreshSources() {
@@ -993,6 +1037,7 @@ $('uninstallPlugin').addEventListener('click', async () => {
   try { await window.projectTool.uninstall(); } catch (error) { showToast(error.message); }
 });
 $('chooseSources').addEventListener('click', chooseSources);
+$('cloneCard').addEventListener('click', cloneCardNow);
 $('refreshSources').addEventListener('click', refreshSources);
 $('createNow').addEventListener('click', createProjectNow);
 $('cancelScan').addEventListener('click', async () => {
@@ -1057,7 +1102,7 @@ $('retryConnection').addEventListener('click', async () => {
   try { await window.projectTool.reconnect(); } finally { $('retryConnection').disabled = false; await refreshStatus(); }
 });
 window.projectTool.onProgress((progress) => {
-  if (progress.stage === 'scan') setScanProgress(progress);
+  if (progress.stage === 'scan' || progress.stage === 'clone') setScanProgress(progress);
   else if (progress.stage === 'duplicate-check') $('duplicateCheckStatus').textContent = `${progress.label} · ${progress.current} / ${progress.total}`;
   else updateCreateProgress(progress);
   if (progress.stage === 'error') showToast(progress.label);

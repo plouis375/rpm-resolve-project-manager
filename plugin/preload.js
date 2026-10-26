@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld('projectTool', {
   exportReport: (result) => ipcRenderer.invoke('tool:export-report', result),
   checkUpdate: () => ipcRenderer.invoke('tool:check-update'),
   openRelease: (url) => ipcRenderer.invoke('tool:open-release', url),
+  chooseCloneFolders: (withBackup) => ipcRenderer.invoke('tool:choose-clone-folders', withBackup),
+  cloneCard: (operationId, options) => ipcRenderer.invoke('tool:clone-card', operationId, options),
   reconnect: () => ipcRenderer.invoke('tool:reconnect'),
   chooseSources: () => ipcRenderer.invoke('tool:choose-sources'),
   scanSources: (operationId, paths, previousScanId, activePaths, previousFiles, forceRefresh) => ipcRenderer.invoke('tool:scan-sources', operationId, paths, previousScanId, activePaths, previousFiles, forceRefresh),

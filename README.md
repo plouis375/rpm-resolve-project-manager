@@ -74,7 +74,7 @@
 </table>
 
 > [!NOTE]
-> RPM travaille **dans Resolve uniquement** : il ne crée pas de dossiers Finder, ne déplace ni ne copie les sources, et ne modifie ni ne supprime jamais les fichiers originaux.
+> RPM travaille **dans Resolve** : il ne crée pas de dossiers Finder, ne déplace pas les sources, et ne modifie ni ne supprime jamais les fichiers originaux. Il ne copie une carte que si tu le demandes (voir *Copie des cartes*).
 
 <a id="installation"></a>
 
@@ -225,6 +225,10 @@ Si un rush a déjà un proxy dans un sous-dossier `proxy` voisin (même nom de f
 ## 🔔 Mises à jour
 
 À l’ouverture, un bandeau discret signale qu’une version plus récente est publiée sur GitHub. Rien n’est téléchargé ni installé automatiquement, et hors ligne le plugin reste silencieux.
+
+## 💾 Copie des cartes
+
+À l’étape Sources, **Copier une carte avec vérification** copie une carte mémoire avec le Clone Tool de Resolve : choisis la carte, la destination (et une seconde copie de sauvegarde si besoin) et la vérification (MD5, SHA-256, xxHash 64 ou taille seule). La copie vérifiée est ensuite ajoutée aux sources. La carte d’origine n’est jamais modifiée, et rien n’est copié sans que tu le demandes.
 
 <a id="cst"></a>
 

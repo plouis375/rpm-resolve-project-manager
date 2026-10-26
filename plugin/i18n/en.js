@@ -410,6 +410,31 @@
     'Statut': 'Status',
     'Détail': 'Detail',
     'Opération interrompue.': 'Operation interrupted.',
-    'Dossier source invalide : {root}': 'Invalid source folder: {root}'
+    'Dossier source invalide : {root}': 'Invalid source folder: {root}',
+    // ── Copie des cartes ──
+    'Dossier source de la carte invalide.': 'Invalid card source folder.',
+    'Dossier de destination invalide.': 'Invalid destination folder.',
+    'Les dossiers de destination doivent être différents.': 'The destination folders must be different.',
+    'La destination ne peut pas contenir la carte ni être dans la carte.': 'The destination cannot contain the card or be inside it.',
+    'Resolve n’a pas accepté les réglages de copie.': 'Resolve did not accept the copy settings.',
+    'Resolve n’a pas pu démarrer la copie de la carte.': 'Resolve could not start copying the card.',
+    'La copie a échoué : {error}': 'The copy failed: {error}',
+    'erreur inconnue': 'unknown error',
+    'La copie a été annulée dans Resolve.': 'The copy was cancelled in Resolve.',
+    'Choisir la carte à copier': 'Choose the card to copy',
+    'Choisir la carte': 'Choose the card',
+    'Choisir le dossier de destination': 'Choose the destination folder',
+    'Choisir le dossier de la seconde copie': 'Choose the folder for the second copy',
+    'Copier ici': 'Copy here',
+    'Resolve n’expose pas le stockage de médias.': 'Resolve does not expose media storage.',
+    'Copie de la carte vérifiée': 'Verified card copy',
+    'Copie interrompue. Les fichiers déjà copiés restent dans la destination.': 'Copy interrupted. Files already copied stay in the destination.',
+    'Copie de la carte impossible.': 'Could not copy the card.',
+    'Carte copiée et vérifiée. Analyse de la copie…': 'Card copied and verified. Analyzing the copy…',
+    'Copier une carte avec vérification': 'Copy a card with verification',
+    'Vérification': 'Verification',
+    'Taille seule': 'Size only',
+    'Seconde copie de sauvegarde': 'Second backup copy',
+    'Copie la carte avec le Clone Tool de Resolve, vérifie chaque fichier, puis ajoute la copie aux sources. La carte d’origine n’est pas modifiée.': 'Copies the card with Resolve’s Clone Tool, verifies each file, then adds the copy to the sources. The original card is not modified.'
   };
 }));

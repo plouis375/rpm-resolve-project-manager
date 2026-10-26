@@ -1,5 +1,10 @@
 # Historique des versions
 
+## v0.33.0 — 26 octobre 2026
+
+- **Copie des cartes avec vérification** (étape Sources) : « Copier une carte avec vérification » utilise le Clone Tool de Resolve (`MediaStorage.StartCloneMedia`). Tu choisis la carte, le dossier de destination (et une seconde copie de sauvegarde si tu le souhaites) et le type de vérification (MD5 par défaut, SHA-256, xxHash 64 ou taille seule). L’avancement s’affiche, la copie peut être arrêtée, puis la copie vérifiée est ajoutée aux sources et analysée. La carte d’origine n’est jamais modifiée.
+- Les copies n’ont lieu que sur demande : rien n’est copié automatiquement, et sans cette fonction les médias restent à leur emplacement d’origine. PRODUCT.md est mis à jour en conséquence.
+
 ## v0.32.0 — 26 octobre 2026
 
 - **Interface en anglais.** L’assistant existe en français et en anglais. Il suit la langue de macOS (`app.getLocale()`) : français si le système est en français, anglais sinon. Une liste **Langue** à la première étape permet de choisir (Automatique, Français, English) ; le choix est mémorisé.

@@ -53,7 +53,7 @@
           <div class="bin-list" id="binPreview"></div>
         </div>
         <div class="view-footer">
-          <div class="connection-wrap"><span class="muted" id="connectionState">Connexion à Resolve…</span><button class="button secondary compact" id="retryConnection" hidden>Reconnecter</button><span class="app-meta">v0.32.0 · <button class="link-button" id="uninstallPlugin" type="button">Désinstaller</button></span></div>
+          <div class="connection-wrap"><span class="muted" id="connectionState">Connexion à Resolve…</span><button class="button secondary compact" id="retryConnection" hidden>Reconnecter</button><span class="app-meta">v0.33.0 · <button class="link-button" id="uninstallPlugin" type="button">Désinstaller</button></span></div>
           <button class="button primary" id="toSources" disabled>Continuer</button>
         </div>
       </section>
@@ -77,6 +77,18 @@
               <span>Actualiser</span>
             </button>
           </div>
+        </div>
+
+        <div class="clone-row">
+          <button class="button secondary compact" id="cloneCard" type="button">Copier une carte avec vérification</button>
+          <label class="clone-field"><span>Vérification</span><select id="cloneChecksum">
+            <option value="md5">MD5</option>
+            <option value="sha256">SHA-256</option>
+            <option value="xxh64">xxHash 64</option>
+            <option value="size">Taille seule</option>
+          </select></label>
+          <label class="clone-field"><input type="checkbox" id="cloneBackup"><span>Seconde copie de sauvegarde</span></label>
+          <span class="clone-note">Copie la carte avec le Clone Tool de Resolve, vérifie chaque fichier, puis ajoute la copie aux sources. La carte d’origine n’est pas modifiée.</span>
         </div>
 
         <div class="table-heading">
