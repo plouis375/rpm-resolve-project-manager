@@ -1,5 +1,10 @@
 # Historique des versions
 
+## v0.25.0 — 26 octobre 2026
+
+- **Gestion couleur du projet, au choix à la place des nodes CST** : en cochant « Appliquer un Color Space Transform », la nouvelle liste « Méthode » propose « Gestion couleur du projet ». Le projet passe en DaVinci YRGB Color Managed v2 (timeline en DaVinci WG/Intermediate, sortie Rec.709-A ou Gamma 2.4 selon le choix existant) et chaque clip reçoit son espace d’entrée (`Input Color Space`) selon sa colonne « Profil couleur ». Presque instantané, et sans besoin de timeline. Le mode « node CST » reste le défaut.
+- Le rapport signale les clips et les réglages que Resolve refuse. Les noms d’espaces suivent l’interface de Resolve et sont à valider sur ta version.
+
 ## v0.24.0 — 26 octobre 2026
 
 - **Chutier « Son »** : les fichiers WAV et AIFF (formats d’enregistreur) vont par défaut dans un nouveau chutier de base « Son ». Les MP3, AAC et autres formats restent dans Musiques. Si ta structure préférée enregistrée n’a pas de chutier « Son », le son direct retombe dans Musiques.

@@ -9,7 +9,7 @@ const FOLDERS = [{ id: 'Rushs', name: 'Rushs' }, { id: 'Exports', name: 'Exports
 
 // Faux Resolve : chutiers, imports, timelines et CST, avec compteurs pour les assertions.
 function fakeResolve(overrides = {}) {
-  const state = { saves: 0, timelines: [], imported: [], grades: [], syncs: [], multicams: [], colors: [], metadata: [], existing: overrides.existing || [] };
+  const state = { saves: 0, timelines: [], imported: [], grades: [], syncs: [], multicams: [], colors: [], metadata: [], settings: [], inputSpaces: [], existing: overrides.existing || [] };
   const makeFolder = (name) => {
     const children = [];
     return { name, children, GetName: async () => name, GetSubFolderList: async () => children };
@@ -36,7 +36,7 @@ function fakeResolve(overrides = {}) {
     SetCurrentFolder: async (folder) => { state.current = folder; return true; },
     ImportMedia: overrides.importMedia || (async (paths) => {
       state.imported.push({ folder: state.current.name, paths });
-      return paths.map((p) => ({ path: p, GetClipProperty: async () => p, SetMetadata: async (data) => { const [key] = Object.keys(data); const ok = overrides.setMetadata ? overrides.setMetadata(key) : true; if (ok) state.metadata.push({ path: p, ...data }); return ok; }, SetClipColor: async (color) => { state.colors.push({ path: p, color }); return overrides.setClipColor ? overrides.setClipColor(color) : true; } }));
+      return paths.map((p) => ({ path: p, GetClipProperty: async () => p, SetClipProperty: async (key, value) => { const ok = overrides.setClipProperty ? overrides.setClipProperty(p) : true; if (ok) state.inputSpaces.push({ path: p, key, value }); return ok; }, SetMetadata: async (data) => { const [key] = Object.keys(data); const ok = overrides.setMetadata ? overrides.setMetadata(key) : true; if (ok) state.metadata.push({ path: p, ...data }); return ok; }, SetClipColor: async (color) => { state.colors.push({ path: p, color }); return overrides.setClipColor ? overrides.setClipColor(color) : true; } }));
     }),
     ImportTimelineFromFile: async () => ({}),
     AutoSyncAudio: overrides.autoSyncAudio || (async (items, settings) => { state.syncs.push({ paths: items.map((i) => i.path), settings }); return true; }),
@@ -49,7 +49,7 @@ function fakeResolve(overrides = {}) {
   };
   const project = {
     GetMediaPool: async () => mediaPool,
-    SetSetting: async () => true,
+    SetSetting: async (key, value) => { const ok = overrides.setSetting ? overrides.setSetting(key) : true; if (ok) state.settings.push([key, value]); return ok; },
     GetSetting: async (key) => ({ timelineFrameRate: '24', timelineResolutionWidth: '1920', timelineResolutionHeight: '1080' })[key],
     SetCurrentTimeline: async () => {},
     GetTimelineCount: async () => state.timelines.length,
@@ -264,4 +264,34 @@ test('les métadonnées refusées par Resolve sont signalées', async () => {
   assert.equal(result.ok, true);
   assert.deepEqual(result.metadataReport.refused, { 'Camera #': 1 });
   assert.match(result.warning, /« Camera # » \(1 plan/);
+});
+
+test('gestion couleur : mode du projet puis espace d’entrée de chaque clip, sans timeline ni CST', async () => {
+  const fake = fakeResolve();
+  const selected = [file('A001.mov'), file('B001.mov', { cameraBrand: 'Canon', cameraModel: 'C70', colorProfile: 'canon-clog2' }), file('C001.mov', { colorProfile: 'none' }), file('D001.mov', { colorProfile: '' })];
+  const result = await run(fake, selected, { ...baseOptions, createTimeline: false, applyCst: true, colorMethod: 'managed', cstOutput: 'gamma24' });
+  assert.deepEqual(fake.state.settings, [['colorScienceMode', 'davinciYRGBColorManagedv2'], ['colorSpaceTimeline', 'DaVinci WG/Intermediate'], ['colorSpaceOutput', 'Rec.709 Gamma 2.4']]);
+  assert.deepEqual(fake.state.inputSpaces, [
+    { path: '/src/A001.mov', key: 'Input Color Space', value: 'S-Gamut3.Cine/S-Log3' },
+    { path: '/src/B001.mov', key: 'Input Color Space', value: 'Cinema Gamut/Canon Log 2' }
+  ]);
+  assert.equal(fake.state.grades.length, 0);
+  assert.equal(result.colorReport.method, 'managed');
+  assert.deepEqual([result.colorReport.applied, result.colorReport.skipped, result.colorReport.unrecognized], [2, 1, ['D001.mov']]);
+});
+
+test('gestion couleur : clips et réglages refusés signalés dans le rapport', async () => {
+  const fake = fakeResolve({ setClipProperty: (p) => p !== '/src/A002.mov', setSetting: (key) => key !== 'colorSpaceOutput' });
+  const result = await run(fake, [file('A001.mov'), file('A002.mov')], { ...baseOptions, createTimeline: false, colorMethod: 'managed' });
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.colorReport.failed, ['A002.mov']);
+  assert.match(result.warning, /réglages de gestion couleur : colorSpaceOutput/);
+  assert.match(result.warning, /l’espace d’entrée sur 1 plan\(s\) \(A002\.mov\)/);
+});
+
+test('la méthode CST reste le défaut et n’écrit pas de réglage couleur', async () => {
+  const fake = fakeResolve();
+  await run(fake, [file('A001.mov')], { ...baseOptions });
+  assert.equal(fake.state.inputSpaces.length, 0);
+  assert.equal(fake.state.grades.length, 1);
 });

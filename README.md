@@ -194,6 +194,10 @@ Avec **Colorer les clips par caméra**, chaque rush reçoit une couleur de clip 
 
 Avec **Écrire les métadonnées des rushs**, chaque rush reçoit dans Resolve : **Camera Type** (marque et modèle), **Camera #** (numéro par caméra), **Date Recorded** (jour de tournage) et **Description** (dossier source). Tu peux alors filtrer le Media Pool ou créer des smart bins. Les champs que Resolve refuse sont listés dans le rapport final. Le profil couleur n’est pas écrit : Resolve n’a pas de champ standard pour lui.
 
+## 🎛️ Gestion couleur du projet
+
+À côté du node CST, la méthode **Gestion couleur du projet** passe le projet en *DaVinci YRGB Color Managed v2* (timeline en DaVinci WG/Intermediate, sortie Rec.709-A ou Gamma 2.4) et règle l’espace d’entrée de chaque clip selon son profil couleur. C’est presque instantané, cela s’applique à toutes les timelines et ne demande pas d’en créer une. Les clips ou réglages que Resolve refuse sont listés dans le rapport.
+
 <a id="cst"></a>
 
 ## 🎨 Color Space Transform

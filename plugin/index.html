@@ -48,7 +48,7 @@
           <div class="bin-list" id="binPreview"></div>
         </div>
         <div class="view-footer">
-          <div class="connection-wrap"><span class="muted" id="connectionState">Connexion à Resolve…</span><button class="button secondary compact" id="retryConnection" hidden>Reconnecter</button><span class="app-meta">v0.24 · <button class="link-button" id="uninstallPlugin" type="button">Désinstaller</button></span></div>
+          <div class="connection-wrap"><span class="muted" id="connectionState">Connexion à Resolve…</span><button class="button secondary compact" id="retryConnection" hidden>Reconnecter</button><span class="app-meta">v0.25 · <button class="link-button" id="uninstallPlugin" type="button">Désinstaller</button></span></div>
           <button class="button primary" id="toSources" disabled>Continuer</button>
         </div>
       </section>
@@ -193,11 +193,18 @@
               <span class="option-check"><input id="timelinePerDay" type="checkbox"><span class="checkmark"></span></span>
               <span><strong>Une timeline par jour de tournage</strong><span>Crée une timeline pour chaque date (si le tournage s’étale sur plusieurs jours).</span></span>
             </label>
+          </div>
+          <div class="timeline-controls" id="colorControls">
             <label class="timeline-toggle">
               <span class="option-check"><input id="applyCst" type="checkbox" checked><span class="checkmark"></span></span>
               <span><strong>Appliquer un Color Space Transform</strong><span>Ajoute un node CST sur chaque plan selon la colonne « Profil couleur » de l’étape Sources (détectée automatiquement : Sony FX3, FX6, FX9, Burano en S-Log3 · Canon C50, C70 en Canon Log 2 · Canon R5 en Canon Log 3). Les plans sans profil restent sans étalonnage. Avec beaucoup de rushs, cette étape peut être longue : Resolve applique le node plan par plan.</span></span>
             </label>
-            <label class="timeline-field" id="cstOutputField"><span>Sortie du CST</span><select id="cstOutput">
+            <label class="timeline-field" id="cstMethodField"><span>Méthode</span><select id="colorMethod">
+              <option value="cst">Node CST sur chaque plan de la timeline (.drx)</option>
+              <option value="managed">Gestion couleur du projet (DaVinci YRGB Color Managed v2)</option>
+            </select></label>
+            <p class="timeline-note" id="colorMethodNote" hidden>Passe le projet en DaVinci YRGB Color Managed v2 (espace de timeline DaVinci WG/Intermediate) et règle l’espace d’entrée de chaque clip selon sa colonne « Profil couleur ». Presque instantané, et indépendant de la création d’une timeline.</p>
+            <label class="timeline-field" id="cstOutputField"><span>Sortie</span><select id="cstOutput">
               <option value="rec709a">Rec.709-A · visionnage sur Mac</option>
               <option value="gamma24">Rec.709 Gamma 2.4 · diffusion</option>
             </select></label>

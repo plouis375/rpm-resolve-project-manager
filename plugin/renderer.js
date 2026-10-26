@@ -757,7 +757,7 @@ function renderCompletion(result) {
     const { applied, unrecognized, failed, output } = result.colorReport;
     const skipped = result.colorReport.skipped || 0;
     const total = applied + skipped + unrecognized.length + failed.length;
-    rows.push(['Color Space Transform', `${applied} / ${total} plan(s) · sortie ${output}${skipped ? ` · ${skipped} déjà en Rec.709` : ''}`]);
+    rows.push([result.colorReport.method === 'managed' ? 'Gestion couleur' : 'Color Space Transform', `${applied} / ${total} plan(s) · sortie ${output}${skipped ? ` · ${skipped} déjà en Rec.709` : ''}`]);
     if (unrecognized.length) rows.push(['Caméra non reconnue', unrecognized.slice(0, 4).join(', ') + (unrecognized.length > 4 ? ` et ${unrecognized.length - 4} autre(s)` : '')]);
   }
   $('completionReport').innerHTML = rows.map(([label, value]) => `<div class="report-row"><span>${escapeHTML(label)}</span><span>${escapeHTML(value)}</span></div>`).join('');
@@ -791,6 +791,7 @@ async function createProjectNow() {
       timelinePerCamera: $('timelinePerCamera').checked,
       timelinePerDay: $('timelinePerDay').checked,
       cstOutput: $('cstOutput').value,
+      colorMethod: $('colorMethod').value,
       timelineOrder: $('timelineOrder').value,
       syncAudio: $('syncAudio').checked,
       syncMode: $('syncMode').value,
@@ -864,8 +865,18 @@ $('projectName').addEventListener('input', renderStructurePreview);
 $('createTimeline').addEventListener('change', (event) => {
   $('timelineControls').hidden = !event.target.checked;
 });
+const updateColorControls = () => {
+  const on = $('applyCst').checked;
+  $('cstOutputField').hidden = !on;
+  $('cstMethodField').hidden = !on;
+  $('colorMethodNote').hidden = !(on && $('colorMethod').value === 'managed');
+};
+$('colorMethod').addEventListener('change', (event) => {
+  updateColorControls();
+  try { localStorage.setItem('rpm.colorMethod', event.target.value); } catch (_) {}
+});
 $('applyCst').addEventListener('change', (event) => {
-  $('cstOutputField').hidden = !event.target.checked;
+  updateColorControls();
   try { localStorage.setItem('rpm.applyCst', event.target.checked ? '1' : '0'); } catch (_) {}
 });
 $('cstOutput').addEventListener('change', (event) => {
@@ -876,7 +887,9 @@ try {
   if (savedCst !== null) $('applyCst').checked = savedCst === '1';
   const savedOutput = localStorage.getItem('rpm.cstOutput');
   if (savedOutput && [...$('cstOutput').options].some((option) => option.value === savedOutput)) $('cstOutput').value = savedOutput;
-  $('cstOutputField').hidden = !$('applyCst').checked;
+  const savedMethod = localStorage.getItem('rpm.colorMethod');
+  if (savedMethod && [...$('colorMethod').options].some((option) => option.value === savedMethod)) $('colorMethod').value = savedMethod;
+  updateColorControls();
 } catch (_) {}
 // Ordre des plans et synchro : réglages mémorisés d’un projet à l’autre.
 [['timelineOrder', 'rpm.timelineOrder'], ['syncMode', 'rpm.syncMode']].forEach(([id, key]) => {

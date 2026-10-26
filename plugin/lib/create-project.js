@@ -6,7 +6,7 @@
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { SEQUENCE, SYNC_AUDIO, FRAME_RATES, cleanText, dominantFormat, nearestFrameRate, matchImported, sortForTimeline } = require('./media');
-const { PROFILES, OUTPUTS, presetFileName } = require('./cst');
+const { PROFILES, OUTPUTS, presetFileName, COLOR_MANAGED_MODE, INPUT_COLOR_SPACES, MANAGED_TIMELINE_SPACE, MANAGED_OUTPUT_SPACES } = require('./cst');
 
 const DEFAULT_TIMEOUTS = { importMs: 120000, cstMs: 20000, syncMs: 300000 };
 const SYNC_MODES = { timecode: 'Timecode', waveform: 'Forme d’onde' };
@@ -126,6 +126,37 @@ async function applyColorTransforms({ project, timeline, importedRushes, output,
       if (ok) report.applied += pending.length;
       else report.failed.push(...pending.map(({ file }) => file.name));
     }
+  }
+  return report;
+}
+
+// Gestion couleur du projet : règle le mode, l’espace de la timeline et la sortie (avant l’import),
+// puis l’espace d’entrée de chaque clip (après l’import). Ne dépend pas de la création d’une timeline.
+async function applyProjectColorManagement(project, output, logger) {
+  const outputKey = MANAGED_OUTPUT_SPACES[output] ? output : 'rec709a';
+  const wanted = [
+    ['colorScienceMode', COLOR_MANAGED_MODE],
+    ['colorSpaceTimeline', MANAGED_TIMELINE_SPACE],
+    ['colorSpaceOutput', MANAGED_OUTPUT_SPACES[outputKey]]
+  ];
+  const refused = [];
+  for (const [key, value] of wanted) {
+    let ok = false;
+    try { ok = Boolean(await project.SetSetting(key, value)); } catch (error) { warnResolve(`SetSetting ${key}`, error, logger); }
+    if (!ok) refused.push(key);
+  }
+  return { refusedSettings: refused, output: OUTPUTS[outputKey] };
+}
+
+async function applyInputColorSpaces({ importedRushes, logger, cstMs }) {
+  const report = { applied: 0, skipped: 0, unrecognized: [], failed: [] };
+  for (const { file, item } of importedRushes) {
+    const profile = file.colorProfile || null;
+    if (profile === 'none') { report.skipped += 1; continue; }
+    if (!INPUT_COLOR_SPACES[profile]) { report.unrecognized.push(file.name); continue; }
+    let ok = false;
+    try { ok = Boolean(await withTimeout(item.SetClipProperty('Input Color Space', INPUT_COLOR_SPACES[profile]), cstMs)); } catch (error) { warnResolve('SetClipProperty Input Color Space', error, logger); }
+    if (ok) report.applied += 1; else report.failed.push(file.name);
   }
   return report;
 }
@@ -293,7 +324,7 @@ async function buildTimelines({ project, mediaPool, bins, root, name, importedRu
     } else {
       timelineFormat = timelineSettings.label;
       await checkpoint();
-      if (options.applyCst) {
+      if (options.applyCst && options.colorMethod !== 'managed') {
         progress('grade', 0, 1, 'Application des Color Space Transform');
         colorReport = await applyColorTransforms({ project, timeline, importedRushes, output: options.cstOutput, presetDir, logger, cstMs });
         colorReport.output = OUTPUTS[options.cstOutput] || OUTPUTS.rec709a;
@@ -331,7 +362,7 @@ async function buildTimelines({ project, mediaPool, bins, root, name, importedRu
         const extra = await mediaPool.CreateTimelineFromClips(extraName, entries.map(({ item }) => item));
         if (!extra) { extraFailed += 1; continue; }
         extraTimelines.push(extraName);
-        if (options.applyCst) {
+        if (options.applyCst && options.colorMethod !== 'managed') {
           const extraColor = await applyColorTransforms({ project, timeline: extra, importedRushes: entries, output: options.cstOutput, presetDir, logger, cstMs });
           extraCstFailed += extraColor.failed.length;
         }
@@ -484,6 +515,10 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
 
     // Le format de timeline doit être fixé AVANT l’import : Resolve verrouille la
     // fréquence d’images du projet dès que des clips ou une timeline existent.
+    const managed = Boolean(options.applyCst) && options.colorMethod === 'managed';
+    let managedSettings = null;
+    if (managed) managedSettings = await applyProjectColorManagement(project, options.cstOutput, logger);
+
     let timelineSettings = null;
     if (options.createTimeline) timelineSettings = await applyTimelineSettings(project, selected.filter((file) => file.category === 'Rushs'), options, logger);
 
@@ -507,6 +542,15 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
     if (options.writeMetadata) {
       metadataReport = await writeMetadata({ importedRushes: imported.importedRushes, logger, cstMs });
       if (metadataReport.clips) await checkpoint();
+    }
+
+    let managedReport = null;
+    if (managed) {
+      managedReport = await applyInputColorSpaces({ importedRushes: imported.importedRushes, logger, cstMs });
+      managedReport.method = 'managed';
+      managedReport.output = managedSettings.output;
+      managedReport.refusedSettings = managedSettings.refusedSettings;
+      if (managedReport.applied) await checkpoint();
     }
 
     let clipColorReport = null;
@@ -538,7 +582,7 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
       timelineName,
       timelineFormat,
       extraTimelines,
-      colorReport,
+      colorReport: managedReport || colorReport,
       syncReport,
       multicamReport,
       clipColorReport,
@@ -548,8 +592,9 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
         clipColorReport?.failed ? `Resolve n’a pas appliqué la couleur de clip à ${clipColorReport.failed} plan(s).` : '',
         syncWarning(syncReport),
         multicamWarning(multicamReport),
-        colorReport?.unrecognized.length ? `${colorReport.unrecognized.length} plan(s) sans CST : caméra non reconnue.` : '',
-        colorReport?.failed.length ? `Resolve n’a pas appliqué le CST sur ${colorReport.failed.length} plan(s).` : '',
+        managedReport?.refusedSettings.length ? `Resolve a refusé des réglages de gestion couleur : ${managedReport.refusedSettings.join(', ')}.` : '',
+        (managedReport || colorReport)?.unrecognized.length ? `${(managedReport || colorReport).unrecognized.length} plan(s) sans ${managedReport ? 'espace d’entrée' : 'CST'} : caméra non reconnue.` : '',
+        (managedReport || colorReport)?.failed.length ? `Resolve n’a pas appliqué ${managedReport ? 'l’espace d’entrée' : 'le CST'} sur ${(managedReport || colorReport).failed.length} plan(s)${managedReport ? ` (${managedReport.failed.slice(0, 4).join(', ')}${managedReport.failed.length > 4 ? '…' : ''})` : ''}.` : '',
         failures.length ? `${failures.length} média(s) n’ont pas été importés.` : '',
         unverified.length ? `${unverified.length} média(s) à vérifier : Resolve n’a pas confirmé leur import (${unverified.slice(0, 6).join(', ')}${unverified.length > 6 ? '…' : ''}).` : '',
         sequenceFailures.length ? `${sequenceFailures.length} séquence(s) n’ont pas été importées.` : ''].filter(Boolean).join(' '),

@@ -10,6 +10,17 @@ const PROFILES = {
 
 const OUTPUTS = { rec709a: 'Rec.709-A', gamma24: 'Gamma 2.4' };
 
+// Gestion couleur du projet (DaVinci YRGB Color Managed v2) : espace d’entrée de chaque clip,
+// tel qu’il est nommé dans l’interface de Resolve (propriété de clip « Input Color Space »).
+const COLOR_MANAGED_MODE = 'davinciYRGBColorManagedv2';
+const INPUT_COLOR_SPACES = {
+  'sony-slog3': 'S-Gamut3.Cine/S-Log3',
+  'canon-clog2': 'Cinema Gamut/Canon Log 2',
+  'canon-clog3': 'Cinema Gamut/Canon Log 3'
+};
+const MANAGED_TIMELINE_SPACE = 'DaVinci WG/Intermediate';
+const MANAGED_OUTPUT_SPACES = { rec709a: 'Rec.709-A', gamma24: 'Rec.709 Gamma 2.4' };
+
 // Mots entiers : « FX3 » ne doit pas attraper « FX30 ».
 const CAMERAS = [
   [/\bFX3\b|\bFX6V?\b|\bFX9\b|\bBURANO\b|\bMPC-2610\b/i, 'sony-slog3'],
@@ -39,4 +50,4 @@ function presetFileName(profile, output) {
   return `${profile}_${output}.drx`;
 }
 
-module.exports = { PROFILES, OUTPUTS, profileForCamera, profileFromMetadata, presetFileName };
+module.exports = { PROFILES, OUTPUTS, COLOR_MANAGED_MODE, INPUT_COLOR_SPACES, MANAGED_TIMELINE_SPACE, MANAGED_OUTPUT_SPACES, profileForCamera, profileFromMetadata, presetFileName };
