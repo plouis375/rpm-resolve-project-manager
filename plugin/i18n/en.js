@@ -68,7 +68,7 @@
     'Les suggestions ne changent rien tant que tu ne les confirmes pas.': 'Suggestions change nothing until you confirm them.',
     'Preset de réglages de projet': 'Project settings preset',
     'Aucun · réglages par défaut de Resolve': 'None · Resolve default settings',
-    'Applique un de tes presets Resolve au projet créé, avant le format de timeline et la gestion couleur choisis ci-dessous.': 'Applies one of your Resolve presets to the new project, before the timeline format and color management chosen below.',
+    'Applique un de tes presets Resolve au projet créé, avant le format de timeline choisi ci-dessous.': 'Applies one of your Resolve presets to the new project, before the timeline format chosen below.',
     'Créer une timeline d’assemblage': 'Create an assembly timeline',
     'Place tous les rushs retenus bout à bout. Elle va dans Séquences si ce chutier est conservé, sinon à la racine du projet.': 'Places all kept rushes end to end. It goes in Sequences if that bin is kept, otherwise at the project root.',
     'Optionnel': 'Optional',
