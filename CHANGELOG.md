@@ -3,6 +3,7 @@
 ## v0.31.1 — 26 octobre 2026
 
 - Interne : l’analyse des médias (lecture ffprobe et Spotlight, parcours des dossiers, enrichissement des fichiers, comparaison des doublons par empreinte) est sortie de `main.js` vers `plugin/lib/scan.js` et couverte par des tests avec des sorties ffprobe et mdls enregistrées (`tests/scan.test.js`). Aucun changement de comportement.
+- Interne : un workflow GitHub Actions lance `npm test` à chaque push et à chaque PR ; `build.command` reprend la version de `plugin/package.json` pour le manifeste et le pied de page de l’interface (un test vérifie aussi que les fichiers du dépôt concordent) ; le `.pkg` ne contient plus de fichiers AppleDouble `._*` (attributs étendus retirés avant `pkgbuild`) ; dates ajoutées aux versions v0.18.2 à v0.19.0.
 
 ## v0.31.0 — 26 octobre 2026
 
@@ -61,19 +62,19 @@
 - L’analyse lit le timecode de départ et l’heure d’enregistrement des rushs (métadonnées, XML Sony et Canon, champs BWF des WAV). Le timecode s’affiche sous la durée à l’étape Sources.
 - Ces choix sont mémorisés d’un projet à l’autre.
 
-## v0.19.0
+## v0.19.0 — 26 octobre 2026
 
 - Nouvelle esthétique : thème sombre inspiré de DaVinci Resolve (fond anthracite, filets gris, accent orange) à la place du thème papier.
 
-## v0.18.4
+## v0.18.4 — 26 octobre 2026
 
 - L’option « Appliquer un Color Space Transform » prévient que l’étape peut être longue avec beaucoup de rushs.
 
-## v0.18.3
+## v0.18.3 — 26 octobre 2026
 
 - Correctif : après installation, le plugin n’apparaissait plus dans Resolve. Le paquet contenait des fichiers lisibles seulement par le compte qui l’a fabriqué ; le build force désormais des permissions lisibles par tous.
 
-## v0.18.2
+## v0.18.2 — 26 octobre 2026
 
 - Correctif : un import Resolve bloqué ne fige plus la création. Chaque lot d’import a un délai de 120 s ; un lot sans réponse est signalé « à vérifier » dans le rapport final.
 - Les échecs des appels Resolve non bloquants (réglages de timeline, CST, sauvegarde) sont désormais journalisés dans la console au lieu d’être ignorés.

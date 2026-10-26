@@ -10,6 +10,8 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 "$ROOT/build.command"
 mkdir -p "$WORK/payload" "$WORK/scripts" "$WORK/resources"
 ditto "$ROOT/dist/$PLUGIN_ID" "$WORK/payload/$PLUGIN_ID"
+# Les attributs étendus (quarantaine, métadonnées Finder) deviennent des fichiers AppleDouble `._*` dans le .pkg : on les retire.
+xattr -cr "$WORK/payload"
 find "$WORK/payload" \( -name '.DS_Store' -o -name '._*' \) -delete
 chmod 755 "$WORK/payload/$PLUGIN_ID/ffprobe"
 cp "$ROOT/package-scripts/preinstall" "$ROOT/package-scripts/postinstall" "$WORK/scripts/"
@@ -17,7 +19,7 @@ chmod 755 "$WORK/scripts/"*
 cp "$ROOT/installer/resources/"* "$WORK/resources/"
 sed "s/__VERSION__/$VERSION/" "$ROOT/installer/distribution.xml" > "$WORK/distribution.xml"
 
-pkgbuild --root "$WORK/payload" --identifier "$PLUGIN_ID" --version "$VERSION" --ownership recommended \
+COPYFILE_DISABLE=1 pkgbuild --root "$WORK/payload" --identifier "$PLUGIN_ID" --version "$VERSION" --ownership recommended \
   --install-location "/Library/Application Support/Blackmagic Design/DaVinci Resolve/Workflow Integration Plugins" \
   --scripts "$WORK/scripts" "$WORK/plugin.pkg"
 productbuild --distribution "$WORK/distribution.xml" --resources "$WORK/resources" --package-path "$WORK" "$OUT"

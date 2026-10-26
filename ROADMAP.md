@@ -80,8 +80,8 @@ Coche chaque point une fois livré, avec la version correspondante.
 ## 5. Côté code
 
 - [x] (v0.31.1) **Tester le scan** : sortir de `plugin/main.js` la lecture ffprobe et Spotlight, le parcours des dossiers et le hachage des doublons vers `plugin/lib/`, puis les tester avec des sorties ffprobe enregistrées.
-- [ ] **CI** : un workflow GitHub Actions qui lance `npm test` à chaque push et à chaque PR (macOS ou Ubuntu, Node 20).
-- [ ] **Version unique** : générer `manifest.xml` et le `vX.Y` de `index.html` depuis `plugin/package.json` dans `build.command`.
-- [ ] **CHANGELOG** : ajouter les dates manquantes (v0.18.2 à v0.19.0).
-- [ ] **Paquet** : retirer les fichiers AppleDouble `._*` du `.pkg` (`COPYFILE_DISABLE=1` ou `xattr -cr` sur le payload avant `pkgbuild`).
+- [x] (v0.31.1) **CI** : un workflow GitHub Actions qui lance `npm test` à chaque push et à chaque PR (macOS ou Ubuntu, Node 20).
+- [x] (v0.31.1) **Version unique** : générer `manifest.xml` et le `vX.Y` de `index.html` depuis `plugin/package.json` dans `build.command`.
+- [x] (v0.31.1) **CHANGELOG** : ajouter les dates manquantes (v0.18.2 à v0.19.0).
+- [x] (v0.31.1) **Paquet** : retirer les fichiers AppleDouble `._*` du `.pkg` (`COPYFILE_DISABLE=1` ou `xattr -cr` sur le payload avant `pkgbuild`).
 - [ ] **Signature et notarisation Apple** ⚠️ : demande un compte développeur Apple (99 $ par an). Décision de l'auteur.
