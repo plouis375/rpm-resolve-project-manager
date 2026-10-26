@@ -5,44 +5,10 @@
 const PROFILES = {
   'sony-slog3': 'S-Gamut3.Cine / S-Log3',
   'canon-clog2': 'Cinema Gamut / Canon Log 2',
-  'canon-clog3': 'Cinema Gamut / Canon Log 3',
-  'panasonic-vlog': 'V-Gamut / V-Log',
-  'fujifilm-flog': 'F-Gamut / F-Log',
-  'fujifilm-flog2': 'F-Gamut / F-Log2',
-  'nikon-nlog': 'N-Gamut / N-Log',
-  'dji-dlog': 'DJI D-Gamut / D-Log',
-  'apple-log': 'Apple Log',
-  'arri-logc3': 'ARRI Wide Gamut 3 / ARRI LogC3',
-  'arri-logc4': 'ARRI Wide Gamut 4 / ARRI LogC4',
-  'red-log3g10': 'REDWideGamutRGB / Log3G10',
-  'bmd-filmgen5': 'Blackmagic Design Wide Gamut Gen 5 / Film Gen 5'
+  'canon-clog3': 'Cinema Gamut / Canon Log 3'
 };
-
-// Profils sans preset .drx : ils ne fonctionnent qu’avec la gestion couleur du projet.
-const MANAGED_ONLY = new Set(['panasonic-vlog', 'fujifilm-flog', 'fujifilm-flog2', 'nikon-nlog', 'dji-dlog', 'apple-log', 'arri-logc3', 'arri-logc4', 'red-log3g10', 'bmd-filmgen5']);
 
 const OUTPUTS = { rec709a: 'Rec.709-A', gamma24: 'Gamma 2.4' };
-
-// Gestion couleur du projet (DaVinci YRGB Color Managed, gestion automatique activée, mode SDR) : espace d’entrée de chaque clip,
-// tel qu’il est nommé dans l’interface de Resolve (propriété de clip « Input Color Space »).
-const COLOR_MANAGED_MODE = 'davinciYRGBColorManaged';
-const COLOR_MANAGED_PRESET = 'SDR'; // rcmPresetMode quand la gestion automatique est activée
-const MANAGED_OUTPUT_LABEL = 'SDR Rec.709';
-const INPUT_COLOR_SPACES = {
-  'sony-slog3': 'S-Gamut3.Cine/S-Log3',
-  'canon-clog2': 'Cinema Gamut/Canon Log 2',
-  'canon-clog3': 'Cinema Gamut/Canon Log 3',
-  'panasonic-vlog': 'V-Gamut/V-Log',
-  'fujifilm-flog': 'F-Gamut/F-Log',
-  'fujifilm-flog2': 'F-Gamut/F-Log2',
-  'nikon-nlog': 'N-Gamut/N-Log',
-  'dji-dlog': 'DJI D-Gamut/D-Log',
-  'apple-log': 'Apple Log',
-  'arri-logc3': 'ARRI Wide Gamut 3/ARRI LogC3',
-  'arri-logc4': 'ARRI Wide Gamut 4/ARRI LogC4',
-  'red-log3g10': 'REDWideGamutRGB/Log3G10',
-  'bmd-filmgen5': 'Blackmagic Design Wide Gamut Gen 5/Blackmagic Design Film Gen 5'
-};
 
 // Mots entiers : « FX3 » ne doit pas attraper « FX30 ».
 const CAMERAS = [
@@ -60,24 +26,13 @@ function profileForCamera(brand = '', model = '') {
 const GAMMA_PATTERNS = [
   [/\bs[\s_-]?log3/, 'sony-slog3'],
   [/\bc[\s_-]?log[\s_-]?3|\bcanon[\s_-]?log[\s_-]?3/, 'canon-clog3'],
-  [/\bc[\s_-]?log[\s_-]?2|\bcanon[\s_-]?log[\s_-]?2/, 'canon-clog2'],
-  [/\bv[\s_-]?log/, 'panasonic-vlog'],
-  [/\bf[\s_-]?log[\s_-]?2/, 'fujifilm-flog2'],
-  [/\bf[\s_-]?log/, 'fujifilm-flog'],
-  [/\bn[\s_-]?log/, 'nikon-nlog'],
-  [/\bd[\s_-]?log/, 'dji-dlog'],
-  [/apple[\s_-]?log/, 'apple-log'],
-  [/log[\s_-]?c[\s_-]?4/, 'arri-logc4'],
-  [/log[\s_-]?c[\s_-]?3?\b/, 'arri-logc3'],
-  [/log3g10/, 'red-log3g10'],
-  [/film[\s_-]?gen[\s_-]?5/, 'bmd-filmgen5']
+  [/\bc[\s_-]?log[\s_-]?2|\bcanon[\s_-]?log[\s_-]?2/, 'canon-clog2']
 ];
 
 // Fonction de transfert lue par ffprobe (color_transfer). Seuls les cas sans ambiguïté comptent :
 // beaucoup de caméras étiquettent leurs fichiers log « bt709 », donc bt709 ne prouve rien.
 function profileFromTransfer(colorTransfer = '') {
   const transfer = String(colorTransfer || '').toLowerCase();
-  if (/apple/.test(transfer)) return 'apple-log';
   if (transfer === 'arib-std-b67' || transfer === 'smpte2084') return 'none'; // HLG, PQ : déjà en vidéo
   return null;
 }
@@ -100,4 +55,4 @@ function presetFileName(profile, output) {
   return `${profile}_${output}.drx`;
 }
 
-module.exports = { MANAGED_ONLY, PROFILES, OUTPUTS, COLOR_MANAGED_MODE, INPUT_COLOR_SPACES, COLOR_MANAGED_PRESET, MANAGED_OUTPUT_LABEL, profileForCamera, profileFromMetadata, profileFromTransfer, presetFileName };
+module.exports = { PROFILES, OUTPUTS, profileForCamera, profileFromMetadata, profileFromTransfer, presetFileName };

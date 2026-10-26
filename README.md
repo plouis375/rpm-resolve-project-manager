@@ -202,13 +202,9 @@ Avec **Créer un clip multicam par jour**, chaque jour de tournage qui compte au
 
 Avec **Colorer les clips par caméra**, chaque rush reçoit une couleur de clip Resolve selon sa caméra. La couleur ne dépend que de la marque et du modèle : un FX3 garde la même couleur d’un projet à l’autre. Deux caméras peuvent tomber sur la même couleur, car Resolve n’en propose que 16.
 
-## 🎛️ Gestion couleur du projet
-
-À côté du node CST, la méthode **Gestion couleur du projet** passe le projet en *DaVinci YRGB Color Managed* (gestion automatique activée, mode SDR, sortie SDR Rec.709) et règle l’espace d’entrée de chaque clip selon son profil couleur. C’est presque instantané, cela s’applique à toutes les timelines et ne demande pas d’en créer une. Les clips ou réglages que Resolve refuse sont listés dans le rapport.
-
 ## ⚙️ Preset de réglages de projet
 
-Si tu as enregistré des presets de réglages de projet dans Resolve, une liste les propose à l’étape Organisation. Le preset est appliqué au projet créé, avant le format de timeline et la gestion couleur choisis dans l’assistant, qui gardent donc le dernier mot.
+Si tu as enregistré des presets de réglages de projet dans Resolve, une liste les propose à l’étape Organisation. Le preset est appliqué au projet créé, avant le format de timeline choisi dans l’assistant, qui garde donc le dernier mot.
 
 ## 🔗 Proxies existants
 
@@ -234,12 +230,10 @@ Avec **Appliquer un Color Space Transform**, chaque plan reçoit un node CST sel
 | Canon C50 · C70 | Cinema Gamut / Canon Log 2 |
 | Canon R5 | Cinema Gamut / Canon Log 3 |
 
-Dix autres profils se choisissent à la main dans la colonne **Profil couleur** : Panasonic V-Log, Fujifilm F-Log et F-Log2, Nikon N-Log, DJI D-Log, Apple Log, ARRI LogC3 et LogC4, RED Log3G10, Blackmagic Film Gen 5. Ils n’ont pas de preset `.drx` et demandent la méthode **Gestion couleur du projet**.
-
 **Sortie** : Rec.709-A (visionnage sur Mac) ou Rec.709 Gamma 2.4 (diffusion).
 
 > [!TIP]
-> Pour les Sony, le gamma enregistré dans le XML sidecar prime sur le modèle : un plan en S-Log3 reçoit le CST, un plan en Rec.709, HLG ou S-Cinetone n’en reçoit pas. Un autre log (S-Log2, par exemple) n’a pas de preset : choisis son profil à la main.
+> Pour les Sony, le gamma enregistré dans le XML sidecar prime sur le modèle : un plan en S-Log3 reçoit le CST, un plan en Rec.709, HLG ou S-Cinetone n’en reçoit pas. Un autre log (S-Log2, par exemple) n’a pas de preset : le plan reste sans CST.
 
 Les plans sans profil restent sans étalonnage et sont signalés dans le rapport. Avec beaucoup de rushs, cette étape peut être longue.
 

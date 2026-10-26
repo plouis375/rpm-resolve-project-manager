@@ -248,29 +248,6 @@ test('une couleur refusée par Resolve est signalée sans bloquer la création',
   assert.match(result.warning, /couleur de clip à 1 plan/);
 });
 
-test('gestion couleur : mode du projet puis espace d’entrée de chaque clip, sans timeline ni CST', async () => {
-  const fake = fakeResolve();
-  const selected = [file('A001.mov'), file('B001.mov', { cameraBrand: 'Canon', cameraModel: 'C70', colorProfile: 'canon-clog2' }), file('C001.mov', { colorProfile: 'none' }), file('D001.mov', { colorProfile: '' })];
-  const result = await run(fake, selected, { ...baseOptions, createTimeline: false, applyCst: true, colorMethod: 'managed', cstOutput: 'gamma24' });
-  assert.deepEqual(fake.state.settings, [['colorScienceMode', 'davinciYRGBColorManaged'], ['isAutoColorManage', '1'], ['rcmPresetMode', 'SDR']]);
-  assert.deepEqual(fake.state.inputSpaces, [
-    { path: '/src/A001.mov', key: 'Input Color Space', value: 'S-Gamut3.Cine/S-Log3' },
-    { path: '/src/B001.mov', key: 'Input Color Space', value: 'Cinema Gamut/Canon Log 2' }
-  ]);
-  assert.equal(fake.state.grades.length, 0);
-  assert.equal(result.colorReport.method, 'managed');
-  assert.deepEqual([result.colorReport.applied, result.colorReport.skipped, result.colorReport.unrecognized], [2, 1, ['D001.mov']]);
-});
-
-test('gestion couleur : clips et réglages refusés signalés dans le rapport', async () => {
-  const fake = fakeResolve({ setClipProperty: (p) => p !== '/src/A002.mov', setSetting: (key) => key !== 'rcmPresetMode' });
-  const result = await run(fake, [file('A001.mov'), file('A002.mov')], { ...baseOptions, createTimeline: false, colorMethod: 'managed' });
-  assert.equal(result.ok, true);
-  assert.deepEqual(result.colorReport.failed, ['A002.mov']);
-  assert.match(result.warning, /réglages de gestion couleur : rcmPresetMode/);
-  assert.match(result.warning, /l’espace d’entrée sur 1 plan\(s\) \(A002\.mov\)/);
-});
-
 test('la méthode CST reste le défaut et n’écrit pas de réglage couleur', async () => {
   const fake = fakeResolve();
   await run(fake, [file('A001.mov')], { ...baseOptions });
@@ -320,17 +297,3 @@ test('le résultat liste le statut de chaque fichier et les avertissements Resol
   assert.ok(result.resolveWarnings.some((message) => /SetClipColor/.test(message) && /boom/.test(message)));
 });
 
-test('gestion couleur : valeur non retenue par Resolve, nouvel essai puis écart signalé', async () => {
-  const fake = fakeResolve({ getSetting: (key, values) => (key === 'colorScienceMode' ? 'davinciYRGB' : values[key]) });
-  const result = await run(fake, [file('A001.mov')], { ...baseOptions, createTimeline: false, colorMethod: 'managed' }, { timeouts: {} });
-  assert.ok(fake.state.settings.filter(([key]) => key === 'colorScienceMode').length >= 3, 'plusieurs essais');
-  assert.deepEqual(result.colorReport.mismatches, [{ key: 'colorScienceMode', wanted: 'davinciYRGBColorManaged', actual: 'davinciYRGB' }]);
-  assert.match(result.warning, /n’a pas gardé le réglage « colorScienceMode » : « davinciYRGB » au lieu de « davinciYRGBColorManaged »/);
-});
-
-test('gestion couleur : valeur retenue, aucun écart ni nouvel essai', async () => {
-  const fake = fakeResolve();
-  const result = await run(fake, [file('A001.mov')], { ...baseOptions, createTimeline: false, colorMethod: 'managed' });
-  assert.deepEqual(result.colorReport.mismatches, []);
-  assert.equal(fake.state.settings.filter(([key]) => key === 'colorScienceMode').length, 1);
-});

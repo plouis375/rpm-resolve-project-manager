@@ -422,16 +422,6 @@ const COLOR_PROFILES = [
   ['sony-slog3', 'S-Log3 · S-Gamut3.Cine'],
   ['canon-clog2', 'Canon Log 2'],
   ['canon-clog3', 'Canon Log 3'],
-  ['panasonic-vlog', `V-Log · ${t('gestion couleur seulement')}`],
-  ['fujifilm-flog', `F-Log · ${t('gestion couleur seulement')}`],
-  ['fujifilm-flog2', `F-Log2 · ${t('gestion couleur seulement')}`],
-  ['nikon-nlog', `N-Log · ${t('gestion couleur seulement')}`],
-  ['dji-dlog', `D-Log · ${t('gestion couleur seulement')}`],
-  ['apple-log', `Apple Log · ${t('gestion couleur seulement')}`],
-  ['arri-logc3', `ARRI LogC3 · ${t('gestion couleur seulement')}`],
-  ['arri-logc4', `ARRI LogC4 · ${t('gestion couleur seulement')}`],
-  ['red-log3g10', `RED Log3G10 · ${t('gestion couleur seulement')}`],
-  ['bmd-filmgen5', `Blackmagic Film Gen 5 · ${t('gestion couleur seulement')}`],
   ['none', t('Aucun CST · déjà en Rec.709')]
 ];
 const CAMERA_PROFILES = [
@@ -781,7 +771,7 @@ function renderCompletion(result) {
     const { applied, unrecognized, failed, output } = result.colorReport;
     const skipped = result.colorReport.skipped || 0;
     const total = applied + skipped + unrecognized.length + failed.length;
-    rows.push([result.colorReport.method === 'managed' ? t('Gestion couleur') : 'Color Space Transform', t('{applied} / {total} plan(s) · sortie {output}', { applied, total, output }) + (skipped ? ` · ${t('{n} déjà en Rec.709', { n: skipped })}` : '')]);
+    rows.push(['Color Space Transform', t('{applied} / {total} plan(s) · sortie {output}', { applied, total, output }) + (skipped ? ` · ${t('{n} déjà en Rec.709', { n: skipped })}` : '')]);
     if (unrecognized.length) rows.push([t('Caméra non reconnue'), unrecognized.slice(0, 4).join(', ') + (unrecognized.length > 4 ? ` ${t('et {n} autre(s)', { n: unrecognized.length - 4 })}` : '')]);
   }
   $('completionReport').innerHTML = rows.map(([label, value]) => `<div class="report-row"><span>${escapeHTML(label)}</span><span>${escapeHTML(value)}</span></div>`).join('');
@@ -815,7 +805,6 @@ async function createProjectNow() {
       timelinePerCamera: $('timelinePerCamera').checked,
       timelinePerDay: $('timelinePerDay').checked,
       cstOutput: $('cstOutput').value,
-      colorMethod: $('colorMethod').value,
       settingsPreset: $('settingsPreset').value,
       timelineOrder: $('timelineOrder').value,
       syncAudio: $('syncAudio').checked,
@@ -938,16 +927,7 @@ $('projectName').addEventListener('input', renderStructurePreview);
 $('createTimeline').addEventListener('change', (event) => {
   $('timelineControls').hidden = !event.target.checked;
 });
-const updateColorControls = () => {
-  const on = $('applyCst').checked;
-  $('cstOutputField').hidden = !on || $('colorMethod').value === 'managed';
-  $('cstMethodField').hidden = !on;
-  $('colorMethodNote').hidden = !(on && $('colorMethod').value === 'managed');
-};
-$('colorMethod').addEventListener('change', (event) => {
-  updateColorControls();
-  try { localStorage.setItem('rpm.colorMethod', event.target.value); } catch (_) {}
-});
+const updateColorControls = () => { $('cstOutputField').hidden = !$('applyCst').checked; };
 $('applyCst').addEventListener('change', (event) => {
   updateColorControls();
   try { localStorage.setItem('rpm.applyCst', event.target.checked ? '1' : '0'); } catch (_) {}
@@ -960,8 +940,6 @@ try {
   if (savedCst !== null) $('applyCst').checked = savedCst === '1';
   const savedOutput = localStorage.getItem('rpm.cstOutput');
   if (savedOutput && [...$('cstOutput').options].some((option) => option.value === savedOutput)) $('cstOutput').value = savedOutput;
-  const savedMethod = localStorage.getItem('rpm.colorMethod');
-  if (savedMethod && [...$('colorMethod').options].some((option) => option.value === savedMethod)) $('colorMethod').value = savedMethod;
   updateColorControls();
 } catch (_) {}
 // Ordre des plans et synchro : réglages mémorisés d’un projet à l’autre.

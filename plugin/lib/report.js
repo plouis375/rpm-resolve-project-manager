@@ -7,13 +7,12 @@ const STATUS_LABELS = () => ({ imported: t('Importé'), failed: t('Échec'), unv
 function colorSections(result) {
   const color = result.colorReport;
   if (!color) return [];
-  const method = color.method === 'managed' ? t('Gestion couleur') : 'Color Space Transform';
+  const method = 'Color Space Transform';
   const rows = [
     [method, t('Appliqué'), t('{n} plan(s) · sortie {output}', { n: color.applied, output: color.output || '' }).trim()],
     ...(color.skipped ? [[method, t('Déjà en Rec.709'), t('{n} plan(s)', { n: color.skipped })]] : []),
     ...color.unrecognized.map((name) => [method, t('Profil non reconnu'), name]),
-    ...color.failed.map((name) => [method, t('Refusé par Resolve'), name]),
-    ...(color.refusedSettings || []).map((key) => [method, t('Réglage refusé'), key])
+    ...color.failed.map((name) => [method, t('Refusé par Resolve'), name])
   ];
   return rows;
 }

@@ -1,5 +1,10 @@
 # Historique des versions
 
+## v0.33.6 — 26 octobre 2026
+
+- **Retour au CST seul** : la méthode « Gestion couleur du projet » est retirée (Resolve ne gardait pas le mode Color Managed, et le réglage des espaces d’entrée taguait les clips automatiquement). Il reste deux choix : appliquer un node CST, ou ne rien faire.
+- Les dix profils log sans preset `.drx` (V-Log, F-Log, N-Log, D-Log, Apple Log, ARRI, RED, Blackmagic) sont retirés avec elle, car ils n’avaient de sens qu’avec cette méthode. Restent S-Log3, Canon Log 2 et Canon Log 3, ainsi que la lecture du gamma dans les XML et de la fonction de transfert (HLG, PQ : pas de CST).
+
 ## v0.33.5 — 26 octobre 2026
 
 - **Interface en français par défaut** : elle ne suit plus la langue de macOS. L’anglais reste disponible avec la liste **Langue** de la première étape (choix mémorisé).

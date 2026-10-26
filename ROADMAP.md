@@ -36,7 +36,7 @@ Coche chaque point une fois livré, avec la version correspondante.
 ## 2. Couleur
 
 ### 2.1 Gestion couleur en option, à la place des nodes CST
-- [x] (v0.25.0, mode v2 uniquement, pas ACES) En mode DaVinci YRGB Color Managed, régler `Input Color Space` sur chaque clip (`SetClipProperty`, propriété documentée dans `DaVinciResolveScript.pyi`). En ACES, régler `IDT`.
+- [x] ~~(livré en v0.25.0, retiré en v0.33.6 : Resolve ne gardait pas le mode et les clips étaient tagués)~~ En mode DaVinci YRGB Color Managed, régler `Input Color Space` sur chaque clip (`SetClipProperty`, propriété documentée dans `DaVinciResolveScript.pyi`). En ACES, régler `IDT`.
 - C'est presque instantané, ça s'applique à toutes les timelines et ça ne dépend plus de la création d'une timeline.
 - Garder le mode node CST (`.drx`) au choix. Régler les paramètres de gestion couleur du projet avec `SetSetting`.
 

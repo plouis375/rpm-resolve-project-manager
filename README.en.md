@@ -204,13 +204,9 @@ With **Create one multicam clip per day**, each shooting day with at least two r
 
 With **Color clips by camera**, each rush gets a Resolve clip color based on its camera. The color only depends on brand and model: an FX3 keeps the same color from one project to the next. Two cameras can end up with the same color, since Resolve only offers 16.
 
-## 🎛️ Project color management
-
-Next to the CST node, the **Project color management** method switches the project to *DaVinci YRGB Color Managed* (automatic color management on, SDR mode, SDR Rec.709 output) and sets each clip's input color space from its color profile. It is almost instant, applies to every timeline and does not require creating one. Clips or settings Resolve refuses are listed in the report.
-
 ## ⚙️ Project settings preset
 
-If you saved project settings presets in Resolve, a list offers them in the Organization step. The preset is applied to the new project before the timeline format and color management chosen in the assistant, which therefore have the last word.
+If you saved project settings presets in Resolve, a list offers them in the Organization step. The preset is applied to the new project before the timeline format chosen in the assistant, which therefore has the last word.
 
 ## 🔗 Existing proxies
 
@@ -236,12 +232,10 @@ With **Apply a Color Space Transform**, each shot gets a CST node based on its c
 | Canon C50 · C70 | Cinema Gamut / Canon Log 2 |
 | Canon R5 | Cinema Gamut / Canon Log 3 |
 
-Ten other profiles can be chosen by hand in the **Color profile** column: Panasonic V-Log, Fujifilm F-Log and F-Log2, Nikon N-Log, DJI D-Log, Apple Log, ARRI LogC3 and LogC4, RED Log3G10, Blackmagic Film Gen 5. They have no `.drx` preset and need the **Project color management** method.
-
 **Output**: Rec.709-A (viewing on Mac) or Rec.709 Gamma 2.4 (broadcast).
 
 > [!TIP]
-> For Sony cameras, the gamma recorded in the sidecar XML takes precedence over the model: an S-Log3 shot gets the CST, a Rec.709, HLG or S-Cinetone shot does not. Another log (S-Log2, for example) has no preset: pick its profile by hand.
+> For Sony cameras, the gamma recorded in the sidecar XML takes precedence over the model: an S-Log3 shot gets the CST, a Rec.709, HLG or S-Cinetone shot does not. Another log (S-Log2, for example) has no preset: the shot stays without CST.
 
 Shots without a profile stay ungraded and are listed in the report. With many rushes, this step can be long.
 

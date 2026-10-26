@@ -25,7 +25,7 @@ test('profileForCamera : pas de faux positifs', () => {
 });
 
 test('presetFileName : tous les presets existent', () => {
-  for (const profile of Object.keys(c.PROFILES).filter((key) => !c.MANAGED_ONLY.has(key))) {
+  for (const profile of Object.keys(c.PROFILES)) {
     for (const output of Object.keys(c.OUTPUTS)) {
       const file = path.join(__dirname, '../plugin/presets', c.presetFileName(profile, output));
       assert.ok(fs.existsSync(file), file);
@@ -46,23 +46,12 @@ test('Sony : FX30, A7S III, A7 IV, A1 reçoivent S-Log3', () => {
   for (const model of ['ILME-FX30', 'ILCE-7SM3', 'ILCE-7M4', 'ILCE-1', 'ZV-E1']) assert.equal(c.profileForCamera('Sony', model), 'sony-slog3', model);
 });
 
-test('chaque profil a un espace d’entrée, et seuls les profils sans .drx sont réservés à la gestion couleur', () => {
-  const fs = require('node:fs');
-  const path = require('node:path');
-  for (const key of Object.keys(c.PROFILES)) {
-    assert.ok(c.INPUT_COLOR_SPACES[key], key);
-    const hasPreset = fs.existsSync(path.join(__dirname, '..', 'plugin', 'presets', c.presetFileName(key, 'rec709a')));
-    assert.equal(hasPreset, !c.MANAGED_ONLY.has(key), key);
-  }
-});
-
 test('profileFromMetadata : gamma Canon et autres logs lus dans le XML', () => {
   assert.equal(c.profileFromMetadata('Canon', 'EOS C70', 'canon-log3'), 'canon-clog3');
   assert.equal(c.profileFromMetadata('Canon', 'EOS C70', 'Canon Log 2'), 'canon-clog2');
   assert.equal(c.profileFromMetadata('Canon', 'EOS C70', 'c-log3'), 'canon-clog3');
   assert.equal(c.profileFromMetadata('Canon', 'EOS C70', 'bt709'), 'none');
-  assert.equal(c.profileFromMetadata('Panasonic', 'S1H', 'v-log'), 'panasonic-vlog');
-  assert.equal(c.profileFromMetadata('Fujifilm', 'X-H2S', 'f-log2'), 'fujifilm-flog2');
+  assert.equal(c.profileFromMetadata('Panasonic', 'S1H', 'v-log'), null);
   assert.equal(c.profileFromMetadata('Sony', 'ILME-FX3', 's-log2'), null);
 });
 
@@ -71,10 +60,10 @@ test('profileFromMetadata : fonction de transfert ffprobe, sans écraser le XML 
   assert.equal(c.profileFromMetadata('Apple', 'iPhone 15 Pro', '', 'smpte2084'), 'none');
   assert.equal(c.profileFromMetadata('Sony', 'ILME-FX3', '', 'bt709'), 'sony-slog3');
   assert.equal(c.profileFromMetadata('Sony', 'ILME-FX3', 's-log3-cine', 'arib-std-b67'), 'sony-slog3');
-  assert.equal(c.profileFromMetadata('Apple', 'iPhone 15 Pro', '', 'apple-log'), 'apple-log');
+  assert.equal(c.profileFromMetadata('Apple', 'iPhone 15 Pro', '', 'apple-log'), null);
   assert.equal(c.profileFromMetadata('Nikon', 'Z9', '', 'bt709'), null);
 });
 
-test('profileFromMetadata : « canon-log » seul n’est pas pris pour N-Log', () => {
+test('profileFromMetadata : « canon-log » seul n’est pas pris pour un autre log', () => {
   assert.equal(c.profileFromMetadata('Canon', 'EOS C70', 'canon-log'), null);
 });

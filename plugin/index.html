@@ -53,7 +53,7 @@
           <div class="bin-list" id="binPreview"></div>
         </div>
         <div class="view-footer">
-          <div class="connection-wrap"><span class="muted" id="connectionState">Connexion à Resolve…</span><button class="button secondary compact" id="retryConnection" hidden>Reconnecter</button><span class="app-meta">v0.33.5 · <button class="link-button" id="uninstallPlugin" type="button">Désinstaller</button></span></div>
+          <div class="connection-wrap"><span class="muted" id="connectionState">Connexion à Resolve…</span><button class="button secondary compact" id="retryConnection" hidden>Reconnecter</button><span class="app-meta">v0.33.6 · <button class="link-button" id="uninstallPlugin" type="button">Désinstaller</button></span></div>
           <button class="button primary" id="toSources" disabled>Continuer</button>
         </div>
       </section>
@@ -208,11 +208,6 @@
               <span class="option-check"><input id="applyCst" type="checkbox" checked><span class="checkmark"></span></span>
               <span><strong>Appliquer un Color Space Transform</strong><span>Ajoute un node CST sur chaque plan selon la colonne « Profil couleur » de l’étape Sources (détectée automatiquement : Sony FX3, FX6, FX9, Burano en S-Log3 · Canon C50, C70 en Canon Log 2 · Canon R5 en Canon Log 3). Les plans sans profil restent sans étalonnage. Avec beaucoup de rushs, cette étape peut être longue : Resolve applique le node plan par plan.</span></span>
             </label>
-            <label class="timeline-field" id="cstMethodField"><span>Méthode</span><select id="colorMethod">
-              <option value="cst">Node CST sur chaque plan de la timeline (.drx)</option>
-              <option value="managed">Gestion couleur du projet (DaVinci YRGB Color Managed)</option>
-            </select></label>
-            <p class="timeline-note" id="colorMethodNote" hidden>Passe le projet en DaVinci YRGB Color Managed (gestion automatique activée, mode SDR, sortie SDR Rec.709) et règle l’espace d’entrée de chaque clip selon sa colonne « Profil couleur ». Presque instantané, et indépendant de la création d’une timeline.</p>
             <label class="timeline-field" id="cstOutputField"><span>Sortie</span><select id="cstOutput">
               <option value="rec709a">Rec.709-A · visionnage sur Mac</option>
               <option value="gamma24">Rec.709 Gamma 2.4 · diffusion</option>
