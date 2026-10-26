@@ -918,6 +918,14 @@ async function refreshStatus() {
   }
 }
 
+// Garde-fou : « overflow: clip » interdit déjà tout défilement du cadre, mais si un navigateur plus ancien
+// décale le document (focus, sélection), on le remet en place au lieu de laisser l'en-tête disparaître.
+['scroll'].forEach((type) => {
+  const lock = (element) => { if (element.scrollTop || element.scrollLeft) { element.scrollTop = 0; element.scrollLeft = 0; } };
+  window.addEventListener(type, () => lock(document.scrollingElement || document.documentElement));
+  document.querySelector('.app-shell').addEventListener(type, (event) => lock(event.currentTarget));
+});
+
 // Bandeau discret si une version plus récente existe ; silencieux hors ligne.
 (async () => {
   try {

@@ -1,5 +1,9 @@
 # Historique des versions
 
+## v0.33.3 — 26 octobre 2026
+
+- **Correctif d’affichage** : l’en-tête et la barre d’étapes pouvaient remonter hors de la fenêtre, laissant un écran gris. Un élément en « overflow: hidden » reste défilable par programme (focus d’une case, sélection) ; le cadre de l’application utilise désormais « overflow: clip », qui l’interdit, avec un garde-fou qui remet le défilement à zéro.
+
 ## v0.33.2 — 26 octobre 2026
 
 - **Gestion couleur du projet, réglages définitifs** : DaVinci YRGB Color Managed avec « Automatic color management » activé, mode de traitement SDR et espace de sortie SDR Rec.709 (réglages `isAutoColorManage` = 1 et `rcmPresetMode` = SDR). Le choix de sortie Rec.709-A / Gamma 2.4 ne s’applique plus à cette méthode (il reste pour le node CST). La case « Enable OpenFX Color Management » n’a pas de réglage documenté dans l’API : elle n’est pas touchée.
