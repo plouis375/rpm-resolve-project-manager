@@ -198,6 +198,10 @@ Avec **Écrire les métadonnées des rushs**, chaque rush reçoit dans Resolve :
 
 À côté du node CST, la méthode **Gestion couleur du projet** passe le projet en *DaVinci YRGB Color Managed v2* (timeline en DaVinci WG/Intermediate, sortie Rec.709-A ou Gamma 2.4) et règle l’espace d’entrée de chaque clip selon son profil couleur. C’est presque instantané, cela s’applique à toutes les timelines et ne demande pas d’en créer une. Les clips ou réglages que Resolve refuse sont listés dans le rapport.
 
+## ⚙️ Preset de réglages de projet
+
+Si tu as enregistré des presets de réglages de projet dans Resolve, une liste les propose à l’étape Organisation. Le preset est appliqué au projet créé, avant le format de timeline et la gestion couleur choisis dans l’assistant, qui gardent donc le dernier mot.
+
 <a id="cst"></a>
 
 ## 🎨 Color Space Transform

@@ -802,6 +802,7 @@ async function createProjectNow() {
       timelinePerDay: $('timelinePerDay').checked,
       cstOutput: $('cstOutput').value,
       colorMethod: $('colorMethod').value,
+      settingsPreset: $('settingsPreset').value,
       timelineOrder: $('timelineOrder').value,
       syncAudio: $('syncAudio').checked,
       syncMode: $('syncMode').value,
@@ -822,6 +823,22 @@ async function createProjectNow() {
   }
 }
 
+// Presets de réglages de projet de l’utilisateur (Resolve), mémorisés par nom.
+async function loadSettingsPresets() {
+  try {
+    const names = await window.projectTool.listSettingsPresets();
+    const select = $('settingsPreset');
+    const previous = select.value || localStorage.getItem('rpm.settingsPreset') || '';
+    select.length = 1;
+    names.forEach((name) => select.add(new Option(name, name)));
+    select.value = names.includes(previous) ? previous : '';
+    $('presetControls').hidden = !names.length;
+  } catch (_) { $('presetControls').hidden = true; }
+}
+$('settingsPreset').addEventListener('change', (event) => {
+  try { localStorage.setItem('rpm.settingsPreset', event.target.value); } catch (_) {}
+});
+
 async function refreshStatus() {
   try {
     const result = await window.projectTool.getStatus();
@@ -832,6 +849,7 @@ async function refreshStatus() {
       : `Connexion à Resolve indisponible · ${result.error || ''}`;
     $('connectionState').textContent = label;
     $('retryConnection').hidden = result.connected;
+    if (result.connected) loadSettingsPresets();
     $('toSources').disabled = !result.connected || !state.folderPreferencesLoaded;
     formatSummary();
   } catch (_) {

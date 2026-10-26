@@ -515,6 +515,14 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
 
     // Le format de timeline doit être fixé AVANT l’import : Resolve verrouille la
     // fréquence d’images du projet dès que des clips ou une timeline existent.
+    // Preset de réglages de l’utilisateur : appliqué d’abord, les choix explicites de l’assistant (couleur, timeline) passent après.
+    let presetWarning = '';
+    if (options.settingsPreset) {
+      let ok = false;
+      try { ok = Boolean(await withTimeout(project.SetProjectSettingsPreset(options.settingsPreset), cstMs)); } catch (error) { warnResolve('SetProjectSettingsPreset', error, logger); }
+      if (!ok) presetWarning = `Resolve n’a pas appliqué le preset de réglages « ${options.settingsPreset} ».`;
+    }
+
     const managed = Boolean(options.applyCst) && options.colorMethod === 'managed';
     let managedSettings = null;
     if (managed) managedSettings = await applyProjectColorManagement(project, options.cstOutput, logger);
@@ -587,7 +595,8 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
       multicamReport,
       clipColorReport,
       metadataReport,
-      warning: [timelineWarning,
+      warning: [presetWarning,
+        timelineWarning,
         metadataWarning(metadataReport),
         clipColorReport?.failed ? `Resolve n’a pas appliqué la couleur de clip à ${clipColorReport.failed} plan(s).` : '',
         syncWarning(syncReport),

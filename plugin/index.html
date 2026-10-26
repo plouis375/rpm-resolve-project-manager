@@ -48,7 +48,7 @@
           <div class="bin-list" id="binPreview"></div>
         </div>
         <div class="view-footer">
-          <div class="connection-wrap"><span class="muted" id="connectionState">Connexion à Resolve…</span><button class="button secondary compact" id="retryConnection" hidden>Reconnecter</button><span class="app-meta">v0.27 · <button class="link-button" id="uninstallPlugin" type="button">Désinstaller</button></span></div>
+          <div class="connection-wrap"><span class="muted" id="connectionState">Connexion à Resolve…</span><button class="button secondary compact" id="retryConnection" hidden>Reconnecter</button><span class="app-meta">v0.28 · <button class="link-button" id="uninstallPlugin" type="button">Désinstaller</button></span></div>
           <button class="button primary" id="toSources" disabled>Continuer</button>
         </div>
       </section>
@@ -151,6 +151,10 @@
         </section>
         <div class="summary-strip" id="creationSummary"></div>
         <div class="options-list">
+          <div class="timeline-controls" id="presetControls" hidden>
+            <label class="timeline-field"><span>Preset de réglages de projet</span><select id="settingsPreset"><option value="">Aucun · réglages par défaut de Resolve</option></select></label>
+            <p class="timeline-note">Applique un de tes presets Resolve au projet créé, avant le format de timeline et la gestion couleur choisis ci-dessous.</p>
+          </div>
           <label class="option-row">
             <span class="option-check"><input id="createTimeline" type="checkbox"><span class="checkmark"></span></span>
             <span class="option-copy"><strong>Créer une timeline d’assemblage</strong><span>Place tous les rushs retenus bout à bout. Elle va dans Séquences si ce chutier est conservé, sinon à la racine du projet.</span></span>

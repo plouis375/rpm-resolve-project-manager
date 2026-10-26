@@ -52,7 +52,7 @@ Coche chaque point une fois livré, avec la version correspondante.
 ## 3. Réglages et proxies
 
 ### 3.1 Presets de réglages de projet
-- [ ] `Project.SetProjectSettingsPreset` et les fonctions associées (21.1). À l'étape Organisation, proposer de choisir un preset existant de l'utilisateur, appliqué à la création.
+- [x] (v0.28.0) `Project.SetProjectSettingsPreset` et les fonctions associées (21.1). À l'étape Organisation, proposer de choisir un preset existant de l'utilisateur, appliqué à la création.
 
 ### 3.2 Lier les proxies existants
 - [ ] Le scan ignore les dossiers `proxy`. Quand un proxy correspondant existe, l'associer avec `MediaPoolItem.LinkProxyMedia(path)` après l'import, et le compter dans le rapport.

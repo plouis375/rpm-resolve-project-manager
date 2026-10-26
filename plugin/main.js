@@ -633,6 +633,14 @@ function registerHandlers() {
     }
     return { connected: integrationReady, error: integrationError, currentProject, ffprobeAvailable: Boolean(await findFFprobe()) };
   });
+  ipcMain.handle('tool:list-settings-presets', async () => {
+    if (!integrationReady || !projectManager) return [];
+    try {
+      const current = await projectManager.GetCurrentProject();
+      const presets = (await current?.GetProjectSettingsPresetList()) || [];
+      return presets.map((preset) => cleanText(preset?.Name)).filter(Boolean);
+    } catch (_) { return []; }
+  });
   ipcMain.handle('tool:reconnect', connectResolve);
   ipcMain.handle('tool:choose-sources', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {

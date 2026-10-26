@@ -9,7 +9,7 @@ const FOLDERS = [{ id: 'Rushs', name: 'Rushs' }, { id: 'Exports', name: 'Exports
 
 // Faux Resolve : chutiers, imports, timelines et CST, avec compteurs pour les assertions.
 function fakeResolve(overrides = {}) {
-  const state = { saves: 0, timelines: [], imported: [], grades: [], syncs: [], multicams: [], colors: [], metadata: [], settings: [], inputSpaces: [], existing: overrides.existing || [] };
+  const state = { saves: 0, timelines: [], imported: [], grades: [], syncs: [], multicams: [], colors: [], metadata: [], settings: [], inputSpaces: [], presets: [], calls: [], existing: overrides.existing || [] };
   const makeFolder = (name) => {
     const children = [];
     return { name, children, GetName: async () => name, GetSubFolderList: async () => children };
@@ -49,7 +49,8 @@ function fakeResolve(overrides = {}) {
   };
   const project = {
     GetMediaPool: async () => mediaPool,
-    SetSetting: async (key, value) => { const ok = overrides.setSetting ? overrides.setSetting(key) : true; if (ok) state.settings.push([key, value]); return ok; },
+    SetProjectSettingsPreset: async (name) => { state.calls.push('preset'); state.presets.push(name); return overrides.setPreset ? overrides.setPreset(name) : true; },
+    SetSetting: async (key, value) => { state.calls.push('setting'); const ok = overrides.setSetting ? overrides.setSetting(key) : true; if (ok) state.settings.push([key, value]); return ok; },
     GetSetting: async (key) => ({ timelineFrameRate: '24', timelineResolutionWidth: '1920', timelineResolutionHeight: '1080' })[key],
     SetCurrentTimeline: async () => {},
     GetTimelineCount: async () => state.timelines.length,
@@ -294,4 +295,25 @@ test('la méthode CST reste le défaut et n’écrit pas de réglage couleur', a
   await run(fake, [file('A001.mov')], { ...baseOptions });
   assert.equal(fake.state.inputSpaces.length, 0);
   assert.equal(fake.state.grades.length, 1);
+});
+
+test('applique le preset de réglages avant les réglages de timeline', async () => {
+  const fake = fakeResolve();
+  await run(fake, [file('A001.mov')], { ...baseOptions, applyCst: false, settingsPreset: 'Mon preset' });
+  assert.deepEqual(fake.state.presets, ['Mon preset']);
+  assert.equal(fake.state.calls[0], 'preset');
+  assert.ok(fake.state.calls.includes('setting'));
+});
+
+test('un preset refusé par Resolve est signalé sans bloquer la création', async () => {
+  const fake = fakeResolve({ setPreset: () => false });
+  const result = await run(fake, [file('A001.mov')], { ...baseOptions, applyCst: false, settingsPreset: 'Absent' });
+  assert.equal(result.ok, true);
+  assert.match(result.warning, /preset de réglages « Absent »/);
+});
+
+test('sans preset choisi, aucun preset n’est appliqué', async () => {
+  const fake = fakeResolve();
+  await run(fake, [file('A001.mov')], { ...baseOptions, applyCst: false, settingsPreset: '' });
+  assert.equal(fake.state.presets.length, 0);
 });
