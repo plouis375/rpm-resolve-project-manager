@@ -282,11 +282,11 @@ test('gestion couleur : mode du projet puis espace d’entrée de chaque clip, s
 });
 
 test('gestion couleur : clips et réglages refusés signalés dans le rapport', async () => {
-  const fake = fakeResolve({ setClipProperty: (p) => p !== '/src/A002.mov', setSetting: (key) => key !== 'colorSpaceOutput' });
+  const fake = fakeResolve({ setClipProperty: (p) => p !== '/src/A002.mov', setSetting: (key) => key !== 'rcmPresetMode' });
   const result = await run(fake, [file('A001.mov'), file('A002.mov')], { ...baseOptions, createTimeline: false, colorMethod: 'managed' });
   assert.equal(result.ok, true);
   assert.deepEqual(result.colorReport.failed, ['A002.mov']);
-  assert.match(result.warning, /réglages de gestion couleur : colorSpaceOutput/);
+  assert.match(result.warning, /réglages de gestion couleur : rcmPresetMode/);
   assert.match(result.warning, /l’espace d’entrée sur 1 plan\(s\) \(A002\.mov\)/);
 });
 
