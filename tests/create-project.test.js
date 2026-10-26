@@ -9,7 +9,7 @@ const FOLDERS = [{ id: 'Rushs', name: 'Rushs' }, { id: 'Exports', name: 'Exports
 
 // Faux Resolve : chutiers, imports, timelines et CST, avec compteurs pour les assertions.
 function fakeResolve(overrides = {}) {
-  const state = { saves: 0, timelines: [], imported: [], grades: [], syncs: [], multicams: [], colors: [], settings: [], inputSpaces: [], presets: [], calls: [], proxies: [], existing: overrides.existing || [] };
+  const state = { saves: 0, timelines: [], imported: [], grades: [], syncs: [], multicams: [], colors: [], settings: [], inputSpaces: [], presets: [], calls: [], values: {}, proxies: [], existing: overrides.existing || [] };
   const makeFolder = (name) => {
     const children = [];
     return { name, children, GetName: async () => name, GetSubFolderList: async () => children };
@@ -50,8 +50,8 @@ function fakeResolve(overrides = {}) {
   const project = {
     GetMediaPool: async () => mediaPool,
     SetProjectSettingsPreset: async (name) => { state.calls.push('preset'); state.presets.push(name); return overrides.setPreset ? overrides.setPreset(name) : true; },
-    SetSetting: async (key, value) => { state.calls.push('setting'); const ok = overrides.setSetting ? overrides.setSetting(key) : true; if (ok) state.settings.push([key, value]); return ok; },
-    GetSetting: async (key) => ({ timelineFrameRate: '24', timelineResolutionWidth: '1920', timelineResolutionHeight: '1080' })[key],
+    SetSetting: async (key, value) => { state.calls.push('setting'); const ok = overrides.setSetting ? overrides.setSetting(key) : true; if (ok) { state.settings.push([key, value]); state.values[key] = value; } return ok; },
+    GetSetting: async (key) => (overrides.getSetting ? overrides.getSetting(key, state.values) : key in state.values ? state.values[key] : ({ timelineFrameRate: '24', timelineResolutionWidth: '1920', timelineResolutionHeight: '1080' })[key]),
     SetCurrentTimeline: async () => {},
     GetTimelineCount: async () => state.timelines.length,
     GetTimelineByIndex: async (i) => state.timelines[i - 1].timeline
@@ -318,4 +318,19 @@ test('le résultat liste le statut de chaque fichier et les avertissements Resol
   const result = await run(fake, [file('A001.mov')], { ...baseOptions, createTimeline: false, applyCst: false, colorClips: true }, { logger: console.warn && { warn: () => {} } });
   assert.deepEqual(result.files, [{ name: 'A001.mov', path: '/src/A001.mov', status: 'imported' }]);
   assert.ok(result.resolveWarnings.some((message) => /SetClipColor/.test(message) && /boom/.test(message)));
+});
+
+test('gestion couleur : valeur non retenue par Resolve, nouvel essai puis écart signalé', async () => {
+  const fake = fakeResolve({ getSetting: (key, values) => (key === 'colorScienceMode' ? 'davinciYRGB' : values[key]) });
+  const result = await run(fake, [file('A001.mov')], { ...baseOptions, createTimeline: false, colorMethod: 'managed' }, { timeouts: {} });
+  assert.ok(fake.state.settings.filter(([key]) => key === 'colorScienceMode').length >= 3, 'plusieurs essais');
+  assert.deepEqual(result.colorReport.mismatches, [{ key: 'colorScienceMode', wanted: 'davinciYRGBColorManaged', actual: 'davinciYRGB' }]);
+  assert.match(result.warning, /n’a pas gardé le réglage « colorScienceMode » : « davinciYRGB » au lieu de « davinciYRGBColorManaged »/);
+});
+
+test('gestion couleur : valeur retenue, aucun écart ni nouvel essai', async () => {
+  const fake = fakeResolve();
+  const result = await run(fake, [file('A001.mov')], { ...baseOptions, createTimeline: false, colorMethod: 'managed' });
+  assert.deepEqual(result.colorReport.mismatches, []);
+  assert.equal(fake.state.settings.filter(([key]) => key === 'colorScienceMode').length, 1);
 });

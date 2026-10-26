@@ -1,5 +1,11 @@
 # Historique des versions
 
+## v0.33.5 — 26 octobre 2026
+
+- **Interface en français par défaut** : elle ne suit plus la langue de macOS. L’anglais reste disponible avec la liste **Langue** de la première étape (choix mémorisé).
+- **Copie des cartes retirée** (ajoutée en v0.33.0) : le plugin ne copie plus rien ; PRODUCT.md retrouve sa formulation d’origine.
+- **Gestion couleur du projet vérifiée** : après chaque réglage, le plugin relit la valeur dans Resolve (jusqu’à 3 essais), puis la revérifie à la fin de la création. Si Resolve garde une autre valeur (par exemple « DaVinci YRGB » au lieu de « Color Managed »), le rapport le dit : réglage, valeur obtenue et valeur demandée.
+
 ## v0.33.4 — 26 octobre 2026
 
 - **Option « Écrire les métadonnées des rushs » retirée** (ajoutée en v0.23.0) : le plugin n’écrit plus rien dans les métadonnées des clips Resolve. Les autres options restent inchangées.

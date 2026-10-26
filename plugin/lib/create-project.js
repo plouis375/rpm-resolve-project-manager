@@ -133,19 +133,50 @@ async function applyColorTransforms({ project, timeline, importedRushes, output,
 
 // Gestion couleur du projet : règle le mode, l’espace de la timeline et la sortie (avant l’import),
 // puis l’espace d’entrée de chaque clip (après l’import). Ne dépend pas de la création d’une timeline.
-async function applyProjectColorManagement(project, output, logger) {
-  const wanted = [
-    ['colorScienceMode', COLOR_MANAGED_MODE],
-    ['isAutoColorManage', '1'],
-    ['rcmPresetMode', COLOR_MANAGED_PRESET]
-  ];
-  const refused = [];
-  for (const [key, value] of wanted) {
-    let ok = false;
-    try { ok = Boolean(await project.SetSetting(key, value)); } catch (error) { warnResolve(`SetSetting ${key}`, error, logger); }
-    if (!ok) refused.push(key);
+const MANAGED_SETTINGS = [
+  ['colorScienceMode', COLOR_MANAGED_MODE],
+  ['isAutoColorManage', '1'],
+  ['rcmPresetMode', COLOR_MANAGED_PRESET]
+];
+
+// Relit les réglages de gestion couleur : Resolve peut répondre « vrai » sans garder la valeur.
+// Une valeur illisible (undefined, vide) n'est pas comptée comme un écart.
+async function readManagedMismatches(project, logger) {
+  const mismatches = [];
+  for (const [key, value] of MANAGED_SETTINGS) {
+    let actual;
+    try { actual = await project.GetSetting(key); } catch (error) { warnResolve(`GetSetting ${key}`, error, logger); }
+    if (actual === undefined || actual === null || actual === '') continue;
+    if (String(actual) !== value) mismatches.push({ key, wanted: value, actual: String(actual) });
   }
-  return { refusedSettings: refused, output: MANAGED_OUTPUT_LABEL };
+  return mismatches;
+}
+
+// Applique les réglages puis les relit ; jusqu'à 3 essais, car Resolve ignore parfois le premier.
+async function applyProjectColorManagement(project, logger, { attempts = 3, delayMs = 400 } = {}) {
+  const refused = new Set();
+  let mismatches = [];
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    refused.clear();
+    for (const [key, value] of MANAGED_SETTINGS) {
+      let ok = false;
+      try { ok = Boolean(await project.SetSetting(key, value)); } catch (error) { warnResolve(`SetSetting ${key}`, error, logger); }
+      if (!ok) refused.add(key);
+    }
+    mismatches = await readManagedMismatches(project, logger);
+    if (!refused.size && !mismatches.length) break;
+    if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  return { refusedSettings: [...refused], mismatches, output: MANAGED_OUTPUT_LABEL };
+}
+
+// Dernier contrôle, après l'import et les timelines : si Resolve a remis l'ancien mode, on réapplique une fois.
+async function recheckProjectColorManagement(project, previous, logger) {
+  let mismatches = await readManagedMismatches(project, logger);
+  if (!mismatches.length) return { ...previous, mismatches };
+  const again = await applyProjectColorManagement(project, logger, { attempts: 2 });
+  mismatches = again.mismatches;
+  return { ...previous, refusedSettings: again.refusedSettings, mismatches };
 }
 
 async function applyInputColorSpaces({ importedRushes, logger, cstMs }) {
@@ -514,7 +545,7 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
 
     const managed = Boolean(options.applyCst) && options.colorMethod === 'managed';
     let managedSettings = null;
-    if (managed) managedSettings = await applyProjectColorManagement(project, options.cstOutput, logger);
+    if (managed) managedSettings = await applyProjectColorManagement(project, logger);
 
     let timelineSettings = null;
     if (options.createTimeline) timelineSettings = await applyTimelineSettings(project, selected.filter((file) => file.category === 'Rushs'), options, logger);
@@ -541,6 +572,7 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
       managedReport.method = 'managed';
       managedReport.output = managedSettings.output;
       managedReport.refusedSettings = managedSettings.refusedSettings;
+      managedReport.mismatches = managedSettings.mismatches;
       if (managedReport.applied) await checkpoint();
     }
 
@@ -564,6 +596,11 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
 
     const timelines = await buildTimelines({ project, mediaPool, bins, root, name, importedRushes: imported.importedRushes, options, timelineSettings, progress, presetDir, logger, checkpoint, cstMs });
     const { timelineName, timelineFormat, colorReport, extraTimelines } = timelines;
+    if (managed && managedReport) {
+      managedSettings = await recheckProjectColorManagement(project, managedSettings, logger);
+      managedReport.refusedSettings = managedSettings.refusedSettings;
+      managedReport.mismatches = managedSettings.mismatches;
+    }
     let timelineWarning = timelines.timelineWarning;
 
     const saved = await projectManager.SaveProject();
@@ -596,6 +633,7 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
         clipColorReport?.failed ? t('Resolve n’a pas appliqué la couleur de clip à {n} plan(s).', { n: clipColorReport.failed }) : '',
         syncWarning(syncReport),
         multicamWarning(multicamReport),
+        ...((managedReport?.mismatches || []).map(({ key, wanted, actual }) => t('Resolve n’a pas gardé le réglage « {key} » : « {actual} » au lieu de « {wanted} ».', { key, actual, wanted }))),
         managedReport?.refusedSettings.length ? t('Resolve a refusé des réglages de gestion couleur : {list}.', { list: managedReport.refusedSettings.join(', ') }) : '',
         (managedReport || colorReport)?.unrecognized.length ? (managedReport
           ? t('{n} plan(s) sans espace d’entrée : caméra non reconnue.', { n: managedReport.unrecognized.length })

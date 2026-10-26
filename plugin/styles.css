@@ -280,6 +280,3 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); }
 }
 label[for="languageSelect"] { display: block; margin-top: 20px; }
 #languageSelect { width: 220px; }
-.clone-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: 12px 0; font-size: 12px; color: var(--ink); }
-.clone-field { display: flex; align-items: center; gap: 6px; }
-.clone-note { flex-basis: 100%; color: var(--muted, #9a9a9a); }

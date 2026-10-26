@@ -1,6 +1,6 @@
 {
   "name": "rpm-resolve-project-manager",
-  "version": "0.33.4",
+  "version": "0.33.5",
   "description": "Assistant de création de projet pour DaVinci Resolve Studio",
   "main": "main.js"
 }
