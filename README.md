@@ -185,6 +185,10 @@ Le son caméra est conservé, et les timelines d’assemblage reprennent le son 
 
 Avec **Créer un clip multicam par jour**, chaque jour de tournage qui compte au moins deux rushs reçoit un clip multicam dans Séquences : un angle par fichier, calé par timecode ou par forme d’onde selon le réglage « Synchroniser par ». Le son direct déjà synchronisé suit les plans.
 
+## 🎨 Couleur de clip par caméra
+
+Avec **Colorer les clips par caméra**, chaque rush reçoit une couleur de clip Resolve selon sa caméra. La couleur ne dépend que de la marque et du modèle : un FX3 garde la même couleur d’un projet à l’autre. Deux caméras peuvent tomber sur la même couleur, car Resolve n’en propose que 16.
+
 <a id="cst"></a>
 
 ## 🎨 Color Space Transform

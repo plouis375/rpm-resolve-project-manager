@@ -1,5 +1,9 @@
 # Historique des versions
 
+## v0.22.0 — 26 octobre 2026
+
+- **Couleur de clip par caméra** (option de l’étape Organisation) : chaque rush reçoit une couleur de clip Resolve (`MediaPoolItem.SetClipColor`) selon sa marque et son modèle. La couleur est calculée à partir du nom de la caméra : elle reste la même d’un projet à l’autre. Les rushs sans caméra identifiée ne sont pas colorés.
+
 ## v0.21.0 — 26 octobre 2026
 
 - **Clip multicam par jour** (option de l’étape Organisation) : après l’import et la synchro du son, un clip multicam par jour de tournage réunit les rushs de toutes les caméras, un angle par fichier (`MediaPool.CreateMulticamClip`). Le calage suit le réglage « Synchroniser par » (timecode ou forme d’onde). Les clips sont rangés dans Séquences et le rapport signale les jours que Resolve n’a pas pu traiter.

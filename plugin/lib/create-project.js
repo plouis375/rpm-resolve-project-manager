@@ -12,6 +12,8 @@ const DEFAULT_TIMEOUTS = { importMs: 120000, cstMs: 20000, syncMs: 300000 };
 const SYNC_MODES = { timecode: 'Timecode', waveform: 'Forme d’onde' };
 const IMPORT_BATCH_SIZE = 25;
 const TIMELINE_RESOLUTIONS = new Set(['1280x720', '1920x1080', '2048x1080', '3840x2160', '4096x2160', '1080x1920', '1080x1080']);
+// Couleurs de clip Resolve (type ClipColor de DaVinciResolveScript.pyi).
+const CLIP_COLORS = ['Orange', 'Apricot', 'Yellow', 'Lime', 'Olive', 'Green', 'Teal', 'Navy', 'Blue', 'Purple', 'Violet', 'Pink', 'Tan', 'Beige', 'Brown', 'Chocolate'];
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 function safeBinName(value, fallback) {
@@ -389,6 +391,27 @@ function multicamWarning(report) {
   return failed.length ? `Resolve n’a pas créé le clip multicam pour ${failed.join(', ')}.` : '';
 }
 
+// Couleur stable par caméra (hachage FNV-1a de la marque et du modèle) : la même caméra garde la même couleur d’un projet à l’autre.
+function cameraColor(file) {
+  const key = `${cleanText(file.cameraBrand)}|${cleanText(file.cameraModel)}`.toLowerCase();
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < key.length; index += 1) hash = Math.imul(hash ^ key.charCodeAt(index), 0x01000193) >>> 0;
+  return CLIP_COLORS[hash % CLIP_COLORS.length];
+}
+
+async function colorClips({ importedRushes, logger, cstMs }) {
+  const report = { applied: 0, failed: 0, cameras: new Map() };
+  for (const { file, item } of importedRushes) {
+    if (!file.cameraBrand && !file.cameraModel) continue;
+    const color = cameraColor(file);
+    let ok = false;
+    try { ok = Boolean(await withTimeout(item.SetClipColor(color), cstMs)); } catch (error) { warnResolve('SetClipColor', error, logger); }
+    if (ok) { report.applied += 1; report.cameras.set(`${cleanText(file.cameraBrand)} ${cleanText(file.cameraModel)}`.trim(), color); } else report.failed += 1;
+  }
+  report.cameras = [...report.cameras].map(([camera, color]) => ({ camera, color }));
+  return report;
+}
+
 function syncWarning(report) {
   if (!report) return '';
   if (report.unavailable) return 'Synchro du son impossible : cette version de Resolve n’expose pas la synchro par forme d’onde. Essaie le timecode.';
@@ -454,6 +477,12 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
       if (syncReport.days.some((day) => day.ok)) await checkpoint();
     }
 
+    let clipColorReport = null;
+    if (options.colorClips) {
+      clipColorReport = await colorClips({ importedRushes: imported.importedRushes, logger, cstMs });
+      if (clipColorReport.applied) await checkpoint();
+    }
+
     let multicamReport = null;
     if (options.createMulticam) {
       multicamReport = await createMulticamClips({ mediaPool, bins, root, importedRushes: imported.importedRushes, mode: options.syncMode, constants: resolveConstants, progress, logger, syncMs });
@@ -480,7 +509,9 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
       colorReport,
       syncReport,
       multicamReport,
+      clipColorReport,
       warning: [timelineWarning,
+        clipColorReport?.failed ? `Resolve n’a pas appliqué la couleur de clip à ${clipColorReport.failed} plan(s).` : '',
         syncWarning(syncReport),
         multicamWarning(multicamReport),
         colorReport?.unrecognized.length ? `${colorReport.unrecognized.length} plan(s) sans CST : caméra non reconnue.` : '',
@@ -499,4 +530,4 @@ async function createProjectInResolve({ projectManager, name, folders, selected,
   }
 }
 
-module.exports = { createProjectInResolve, safeBinName, audioSyncSettings, multicamOptions, DEFAULT_TIMEOUTS };
+module.exports = { createProjectInResolve, safeBinName, audioSyncSettings, multicamOptions, cameraColor, DEFAULT_TIMEOUTS };

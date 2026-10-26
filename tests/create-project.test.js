@@ -2,14 +2,14 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const { createProjectInResolve } = require('../plugin/lib/create-project');
+const { createProjectInResolve, cameraColor } = require('../plugin/lib/create-project');
 
 const PRESET_DIR = path.join(__dirname, '..', 'plugin', 'presets');
 const FOLDERS = [{ id: 'Rushs', name: 'Rushs' }, { id: 'Exports', name: 'Exports' }];
 
 // Faux Resolve : chutiers, imports, timelines et CST, avec compteurs pour les assertions.
 function fakeResolve(overrides = {}) {
-  const state = { saves: 0, timelines: [], imported: [], grades: [], syncs: [], multicams: [], existing: overrides.existing || [] };
+  const state = { saves: 0, timelines: [], imported: [], grades: [], syncs: [], multicams: [], colors: [], existing: overrides.existing || [] };
   const makeFolder = (name) => {
     const children = [];
     return { name, children, GetName: async () => name, GetSubFolderList: async () => children };
@@ -36,7 +36,7 @@ function fakeResolve(overrides = {}) {
     SetCurrentFolder: async (folder) => { state.current = folder; return true; },
     ImportMedia: overrides.importMedia || (async (paths) => {
       state.imported.push({ folder: state.current.name, paths });
-      return paths.map((p) => ({ path: p, GetClipProperty: async () => p }));
+      return paths.map((p) => ({ path: p, GetClipProperty: async () => p, SetClipColor: async (color) => { state.colors.push({ path: p, color }); return overrides.setClipColor ? overrides.setClipColor(color) : true; } }));
     }),
     ImportTimelineFromFile: async () => ({}),
     AutoSyncAudio: overrides.autoSyncAudio || (async (items, settings) => { state.syncs.push({ paths: items.map((i) => i.path), settings }); return true; }),
@@ -227,4 +227,22 @@ test('un multicam refusé par Resolve est signalé sans bloquer la création', a
   assert.equal(result.ok, true);
   assert.equal(result.timelineName, 'Projet test — Assemblage');
   assert.match(result.warning, /pas créé le clip multicam pour 2026-09-12/);
+});
+
+test('colore chaque rush selon sa caméra, de façon stable', async () => {
+  assert.equal(cameraColor({ cameraBrand: 'Sony', cameraModel: 'FX3' }), cameraColor({ cameraBrand: ' sony', cameraModel: 'fx3 ' }));
+  const fake = fakeResolve();
+  const selected = [file('A001.mov'), file('A002.mov'), file('B001.mov', { cameraModel: 'FX6' }), file('X.mov', { cameraBrand: '', cameraModel: '' })];
+  const result = await run(fake, selected, { ...baseOptions, createTimeline: false, applyCst: false, colorClips: true });
+  assert.deepEqual(fake.state.colors.map((c) => c.path), ['/src/A001.mov', '/src/A002.mov', '/src/B001.mov']);
+  assert.equal(fake.state.colors[0].color, fake.state.colors[1].color);
+  assert.equal(result.clipColorReport.applied, 3);
+  assert.deepEqual(result.clipColorReport.cameras.map((c) => c.camera), ['Sony FX3', 'Sony FX6']);
+});
+
+test('une couleur refusée par Resolve est signalée sans bloquer la création', async () => {
+  const fake = fakeResolve({ setClipColor: () => false });
+  const result = await run(fake, [file('A001.mov')], { ...baseOptions, applyCst: false, colorClips: true });
+  assert.equal(result.ok, true);
+  assert.match(result.warning, /couleur de clip à 1 plan/);
 });

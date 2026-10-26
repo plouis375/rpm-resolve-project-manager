@@ -786,6 +786,7 @@ async function createProjectNow() {
       syncAudio: $('syncAudio').checked,
       syncMode: $('syncMode').value,
       createMulticam: $('createMulticam').checked,
+      colorClips: $('colorClips').checked,
       folders: state.folders.map(({ id, name }) => ({ id, name })),
       files: state.files.map(({ id, category, cameraBrand, cameraModel, shootingDate, colorProfile, include }) => ({ id, category, cameraBrand, cameraModel, shootingDate, colorProfile: colorProfile || '', include }))
     });
@@ -890,6 +891,10 @@ $('createMulticam').addEventListener('change', (event) => {
 });
 try { $('createMulticam').checked = localStorage.getItem('rpm.createMulticam') === '1'; } catch (_) {}
 updateSyncControls();
+$('colorClips').addEventListener('change', (event) => {
+  try { localStorage.setItem('rpm.colorClips', event.target.checked ? '1' : '0'); } catch (_) {}
+});
+try { $('colorClips').checked = localStorage.getItem('rpm.colorClips') === '1'; } catch (_) {}
 $('backToSources').addEventListener('click', () => setStep(2));
 $('uninstallPlugin').addEventListener('click', async () => {
   try { await window.projectTool.uninstall(); } catch (error) { showToast(error.message); }

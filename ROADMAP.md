@@ -26,7 +26,7 @@ Coche chaque point une fois livré, avec la version correspondante.
 
 ### 1.2 Métadonnées et couleurs de clip dans Resolve
 - [ ] `MediaPoolItem.SetMetadata({...})` : écrire la caméra, la date de tournage, le dossier source et le profil couleur. Le Media Pool devient filtrable et on peut faire des smart bins.
-- [ ] `MediaPoolItem.SetClipColor(...)` : une couleur par caméra, stable d'un projet à l'autre.
+- [x] `MediaPoolItem.SetClipColor(...)` : une couleur par caméra, stable d'un projet à l'autre (v0.22.0, hachage marque + modèle).
 - Lister les clés de métadonnées valides dans la doc avant de les écrire.
 
 ### 1.3 Chutier « Son » pour le son direct
